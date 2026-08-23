@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace AChen.Backend.Api.Tests;
 
@@ -47,6 +48,10 @@ public sealed class ContentDeliveryEndpointsTests(ApiFactory factory) : IClassFi
         Assert.Equal(release.Id, manifest.ReleaseId);
         Assert.Equal("1.1.0", manifest.ContentVersion);
 
+        var manifestResponse = await client.GetAsync(
+            $"/api/content/manifests/latest?channel=development&platform=StandaloneWindows64&appVersion={appVersion}");
+        Assert.Contains("no-store", manifestResponse.Headers.CacheControl?.ToString());
+
         using var request = new HttpRequestMessage(HttpMethod.Get, manifest.HotUpdate.Path);
         request.Headers.Range = new RangeHeaderValue(0, 2);
         var download = await client.SendAsync(request);
@@ -54,6 +59,17 @@ public sealed class ContentDeliveryEndpointsTests(ApiFactory factory) : IClassFi
         Assert.Equal(3, (await download.Content.ReadAsByteArrayAsync()).Length);
         Assert.NotNull(download.Headers.ETag);
         Assert.Contains("immutable", download.Headers.CacheControl?.ToString());
+
+        using var headRequest = new HttpRequestMessage(HttpMethod.Head, manifest.HotUpdate.Path);
+        var head = await client.SendAsync(headRequest);
+        Assert.Equal(HttpStatusCode.OK, head.StatusCode);
+        Assert.Equal(manifest.HotUpdate.Size, head.Content.Headers.ContentLength);
+        Assert.Empty(await head.Content.ReadAsByteArrayAsync());
+
+        using var conditionalRequest = new HttpRequestMessage(HttpMethod.Get, manifest.HotUpdate.Path);
+        conditionalRequest.Headers.IfNoneMatch.Add(download.Headers.ETag!);
+        var notModified = await client.SendAsync(conditionalRequest);
+        Assert.Equal(HttpStatusCode.NotModified, notModified.StatusCode);
     }
 
     [Fact]
@@ -87,6 +103,26 @@ public sealed class ContentDeliveryEndpointsTests(ApiFactory factory) : IClassFi
     }
 
     [Fact]
+    public async Task Zip_bomb_expanded_size_is_rejected_before_extraction()
+    {
+        var release = await CreateReleaseAsync("1.3.1");
+        var package = BuildPackage(
+            "StandaloneWindows64",
+            "0.1.0",
+            "1.3.1",
+            archiveMutation: archive =>
+            {
+                var entry = archive.CreateEntry("Addressables/bomb.bundle", CompressionLevel.SmallestSize);
+                using var output = entry.Open();
+                output.Write(new byte[21 * 1024 * 1024]);
+            });
+        var response = await UploadAsync(release.Id, package);
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        await AssertErrorCodeAsync(response, "CONTENT_ARCHIVE_EXPANDED_TOO_LARGE");
+    }
+
+    [Fact]
     public async Task Upload_is_idempotent_for_same_archive_and_conflicts_for_different_archive()
     {
         var release = await CreateReleaseAsync("1.4.0");
@@ -101,13 +137,18 @@ public sealed class ContentDeliveryEndpointsTests(ApiFactory factory) : IClassFi
             bundleBytes: [9, 8, 7, 6]);
         var conflict = await UploadAsync(release.Id, changed);
         Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode);
-        await AssertErrorCodeAsync(conflict, "CONTENT_ARTIFACT_CONFLICT");
+        await AssertErrorCodeAsync(conflict, "RELEASE_ARTIFACT_CONFLICT");
     }
 
     [Fact]
     public async Task Active_release_uses_optimistic_concurrency_and_supports_rollback()
     {
         const string appVersion = "0.1.2";
+        var missing = await client.GetAsync(
+            $"/api/content/active-releases/development/StandaloneWindows64/{appVersion}");
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+        await AssertErrorCodeAsync(missing, "ACTIVE_CONTENT_RELEASE_NOT_FOUND");
+
         var first = await CreateReadyReleaseAsync("1.5.0", appVersion);
         var second = await CreateReadyReleaseAsync("1.6.0", appVersion);
         var initial = await SetActiveAsync(first.Id, null, appVersion);
@@ -126,6 +167,36 @@ public sealed class ContentDeliveryEndpointsTests(ApiFactory factory) : IClassFi
     }
 
     [Fact]
+    public async Task Ready_release_rejects_cross_platform_publish_and_delete()
+    {
+        const string appVersion = "0.1.3";
+        var release = await CreateReadyReleaseAsync("1.7.0", appVersion);
+
+        var crossPlatform = await client.PutAsJsonAsync(
+            $"/api/content/active-releases/development/Android/{appVersion}",
+            new { releaseId = release.Id, expectedCurrentReleaseId = (Guid?)null });
+        Assert.Equal(HttpStatusCode.Conflict, crossPlatform.StatusCode);
+        await AssertErrorCodeAsync(crossPlatform, "CONTENT_RELEASE_TARGET_MISMATCH");
+
+        var delete = await client.DeleteAsync($"/api/content/releases/{release.Id:D}");
+        Assert.Equal(HttpStatusCode.Conflict, delete.StatusCode);
+        await AssertErrorCodeAsync(delete, "CONTENT_RELEASE_IMMUTABLE");
+    }
+
+    [Fact]
+    public async Task Release_list_supports_partial_pagination_and_filters()
+    {
+        await CreateReleaseAsync("1.8.0", "0.1.4");
+        var response = await client.GetAsync(
+            "/api/content/releases?pageSize=1&platform=StandaloneWindows64&appVersion=0.1.4&state=AwaitingUpload");
+        response.EnsureSuccessStatusCode();
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(1, json.RootElement.GetProperty("page").GetInt32());
+        Assert.Equal(1, json.RootElement.GetProperty("pageSize").GetInt32());
+        Assert.Equal(1, json.RootElement.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
     public async Task Admin_login_page_does_not_expose_publish_key()
     {
         using var anonymous = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
@@ -138,6 +209,48 @@ public sealed class ContentDeliveryEndpointsTests(ApiFactory factory) : IClassFi
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.DoesNotContain(ApiFactory.PublishKey, html, StringComparison.Ordinal);
         Assert.Contains("发布后台", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Admin_login_rejects_wrong_key_and_write_requires_csrf_token()
+    {
+        using var browser = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = true
+        });
+
+        var loginPage = await browser.GetAsync("/admin/content/login");
+        string loginHtml = await loginPage.Content.ReadAsStringAsync();
+        string token = ExtractAntiforgeryToken(loginHtml);
+
+        var wrong = await browser.PostAsync("/admin/content/login", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["PublishKey"] = "incorrect-publish-key",
+            ["__RequestVerificationToken"] = token
+        }));
+        Assert.Equal(HttpStatusCode.OK, wrong.StatusCode);
+
+        loginPage = await browser.GetAsync("/admin/content/login");
+        loginHtml = await loginPage.Content.ReadAsStringAsync();
+        token = ExtractAntiforgeryToken(loginHtml);
+        var login = await browser.PostAsync("/admin/content/login", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["PublishKey"] = ApiFactory.PublishKey,
+            ["__RequestVerificationToken"] = token
+        }));
+        Assert.Equal(HttpStatusCode.Redirect, login.StatusCode);
+
+        string authCookie = login.Headers.GetValues("Set-Cookie")
+            .Single(value => value.StartsWith("AChen.ContentAdmin=", StringComparison.Ordinal))
+            .Split(';', 2)[0];
+        using var csrfRequest = new HttpRequestMessage(HttpMethod.Post, "/admin/content/releases/new")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>())
+        };
+        csrfRequest.Headers.Add("Cookie", authCookie);
+        var csrf = await browser.SendAsync(csrfRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, csrf.StatusCode);
     }
 
     private async Task<ReleasePayload> CreateReadyReleaseAsync(string contentVersion, string appVersion = "0.1.0")
@@ -246,6 +359,18 @@ public sealed class ContentDeliveryEndpointsTests(ApiFactory factory) : IClassFi
     {
         using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal(expectedCode, problem.RootElement.GetProperty("code").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(problem.RootElement.GetProperty("traceId").GetString()));
+        Assert.True(response.Headers.Contains("X-Request-Id"));
+    }
+
+    private static string ExtractAntiforgeryToken(string html)
+    {
+        var match = Regex.Match(
+            html,
+            "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"",
+            RegexOptions.CultureInvariant);
+        Assert.True(match.Success, "The Razor form did not render an antiforgery token.");
+        return WebUtility.HtmlDecode(match.Groups[1].Value);
     }
 
     private sealed record ReleasePayload(Guid Id);

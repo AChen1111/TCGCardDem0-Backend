@@ -96,7 +96,7 @@ public sealed class ContentReleaseService(
             }
 
             throw Conflict(
-                "CONTENT_ARTIFACT_CONFLICT",
+                "RELEASE_ARTIFACT_CONFLICT",
                 "This release is already ready with a different archive.");
         }
 

@@ -121,7 +121,15 @@ public static class ContentEndpoints
         CancellationToken cancellationToken)
     {
         var active = await service.GetActiveAsync(channel, platform, appVersion, cancellationToken);
-        return active is null ? Results.NotFound() : Results.Ok(active);
+        if (active is null)
+        {
+            throw new ContentDeliveryException(
+                StatusCodes.Status404NotFound,
+                "ACTIVE_CONTENT_RELEASE_NOT_FOUND",
+                "No active content release exists for this channel, platform, and app version.");
+        }
+
+        return Results.Ok(active);
     }
 
     private static async Task<IResult> SetActiveReleaseAsync(

@@ -197,17 +197,21 @@ await using (var scope = app.Services.CreateAsyncScope())
     await database.MigrateAsync();
 }
 
-app.UseExceptionHandler();
-app.UseStaticFiles();
 app.Use(async (context, next) =>
 {
-    context.Response.Headers["X-Request-Id"] = context.TraceIdentifier;
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    context.Response.Headers["X-Frame-Options"] = "DENY";
-    context.Response.Headers["Referrer-Policy"] = "no-referrer";
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self'; img-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'";
+    context.Response.OnStarting(() =>
+    {
+        context.Response.Headers["X-Request-Id"] = context.TraceIdentifier;
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["X-Frame-Options"] = "DENY";
+        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self'; img-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'";
+        return Task.CompletedTask;
+    });
     await next();
 });
+app.UseExceptionHandler();
+app.UseStaticFiles();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
