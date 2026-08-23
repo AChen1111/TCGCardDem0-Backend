@@ -1,0 +1,146 @@
+@page "/register"
+@model AChen.Backend.Api.Pages.Account.RegisterModel
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = Model.RegistrationCompleted ? "注册完成" : "创建玩家账号";
+}
+
+<div class="account-grid">
+    <section class="account-story" aria-labelledby="story-title">
+        <div class="story-copy">
+            <p class="account-eyebrow">ACHEN PLAYER ACCOUNT</p>
+            <h1 id="story-title">一个账号，连接你的每次冒险。</h1>
+            <p class="story-lead">创建玩家账号后，你的基础资料、昵称与游戏进度将由服务器安全管理，并可在不同设备上继续使用。</p>
+        </div>
+
+        <div class="account-signal" aria-hidden="true">
+            <div class="signal-grid"></div>
+            <div class="signal-line line-one"></div>
+            <div class="signal-line line-two"></div>
+            <div class="signal-node node-one"></div>
+            <div class="signal-node node-two"></div>
+            <div class="signal-node node-three"></div>
+            <div class="signal-core"><span>AC</span></div>
+        </div>
+
+        <ol class="account-benefits" aria-label="账号能力">
+            <li><span>01</span><div><strong>统一玩家身份</strong><small>用户名同时作为初始游戏昵称</small></div></li>
+            <li><span>02</span><div><strong>服务端保存</strong><small>基础资料与金币数据集中管理</small></div></li>
+            <li><span>03</span><div><strong>随时继续</strong><small>回到游戏客户端即可登录</small></div></li>
+        </ol>
+    </section>
+
+    <section class="register-panel" id="register-form" aria-labelledby="register-title">
+        @if (Model.RegistrationCompleted)
+        {
+            <div class="register-success" role="status" aria-live="polite">
+                <div class="success-mark" aria-hidden="true"><span></span></div>
+                <p class="account-eyebrow">ACCOUNT READY</p>
+                <h2 id="register-title">账号创建完成</h2>
+                <p><strong>@Model.RegisteredUsername</strong> 已经可以使用。现在请返回游戏客户端，用用户名或邮箱登录。</p>
+                <div class="success-details">
+                    <span>下一步</span>
+                    <strong>打开游戏并登录</strong>
+                </div>
+                <a class="secondary-action" asp-page="/Account/Register">再注册一个账号</a>
+            </div>
+        }
+        else
+        {
+            <header class="register-heading">
+                <p class="account-eyebrow">NEW PLAYER</p>
+                <h2 id="register-title">创建玩家账号</h2>
+                <p>填写四项信息，大约一分钟即可完成。</p>
+            </header>
+
+            <form method="post" class="register-form" data-register-form>
+                <div asp-validation-summary="ModelOnly" class="form-alert" role="alert"></div>
+
+                <div class="field-group">
+                    <label asp-for="Input.Username">用户名</label>
+                    <div class="input-frame">
+                        <input asp-for="Input.Username"
+                               autocomplete="username"
+                               autocapitalize="none"
+                               spellcheck="false"
+                               maxlength="24"
+                               pattern="[A-Za-z0-9_]{3,24}"
+                               placeholder="例如 AChen_Player"
+                               autofocus
+                               aria-describedby="username-help username-error" />
+                        <span class="input-tag" aria-hidden="true">ID</span>
+                    </div>
+                    <small id="username-help" class="field-help">3–24 位英文字母、数字或下划线</small>
+                    <span asp-validation-for="Input.Username" id="username-error" class="field-error"></span>
+                </div>
+
+                <div class="field-group">
+                    <label asp-for="Input.Email">邮箱</label>
+                    <div class="input-frame">
+                        <input asp-for="Input.Email"
+                               type="email"
+                               autocomplete="email"
+                               autocapitalize="none"
+                               spellcheck="false"
+                               maxlength="254"
+                               placeholder="name@example.com"
+                               aria-describedby="email-help email-error" />
+                        <span class="input-tag" aria-hidden="true">@@</span>
+                    </div>
+                    <small id="email-help" class="field-help">用于登录及后续账号找回</small>
+                    <span asp-validation-for="Input.Email" id="email-error" class="field-error"></span>
+                </div>
+
+                <div class="field-group">
+                    <label asp-for="Input.Password">密码</label>
+                    <div class="input-frame has-action">
+                        <input asp-for="Input.Password"
+                               value=""
+                               type="password"
+                               autocomplete="new-password"
+                               minlength="8"
+                               maxlength="128"
+                               placeholder="至少 8 位字符"
+                               aria-describedby="password-help password-error" />
+                        <button type="button" class="input-action" data-password-toggle aria-controls="Input_Password Input_ConfirmPassword" aria-pressed="false">显示</button>
+                    </div>
+                    <div class="password-meter" aria-hidden="true">
+                        <span data-password-segment></span>
+                        <span data-password-segment></span>
+                        <span data-password-segment></span>
+                        <span data-password-segment></span>
+                    </div>
+                    <small id="password-help" class="field-help" data-password-hint>建议组合大小写字母、数字和符号</small>
+                    <span asp-validation-for="Input.Password" id="password-error" class="field-error"></span>
+                </div>
+
+                <div class="field-group">
+                    <label asp-for="Input.ConfirmPassword">确认密码</label>
+                    <div class="input-frame">
+                        <input asp-for="Input.ConfirmPassword"
+                               value=""
+                               type="password"
+                               autocomplete="new-password"
+                               maxlength="128"
+                               placeholder="再次输入密码"
+                               aria-describedby="confirm-password-error" />
+                        <span class="input-tag" aria-hidden="true">02</span>
+                    </div>
+                    <span asp-validation-for="Input.ConfirmPassword" id="confirm-password-error" class="field-error"></span>
+                </div>
+
+                <button type="submit" class="register-submit" data-submit-button>
+                    <span data-submit-label>创建我的玩家账号</span>
+                    <span class="button-loader" aria-hidden="true"></span>
+                </button>
+
+                <p class="security-note"><span aria-hidden="true"></span>密码只会加密保存，页面不会记录或回显你的密码。</p>
+            </form>
+        }
+    </section>
+</div>
+
+@if (!Model.RegistrationCompleted)
+{
+    <script src="~/js/account-register.js" asp-append-version="true" defer></script>
+}

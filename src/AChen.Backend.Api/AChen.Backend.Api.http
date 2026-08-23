@@ -35,6 +35,34 @@ Authorization: Bearer {{accessToken}}
 
 ###
 
+GET {{host}}/api/player/bootstrap
+Authorization: Bearer {{accessToken}}
+
+###
+
+PATCH {{host}}/api/player/profile
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickname": "Local Player",
+  "avatarId": 1,
+  "expectedRevision": 0
+}
+
+###
+
+GET {{host}}/api/game-config/bootstrap
+Accept: application/json
+
+### Replace the ETag after publishing a configuration from /admin/game-config.
+
+GET {{host}}/api/game-config/bootstrap
+Accept: application/json
+If-None-Match: "game-config-1"
+
+###
+
 POST {{host}}/api/auth/refresh
 Content-Type: application/json
 

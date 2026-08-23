@@ -5,3 +5,8 @@ public class ApiException(int statusCode, string code, string message) : Excepti
     public int StatusCode { get; } = statusCode;
     public string Code { get; } = code;
 }
+
+public interface IApiValidationException
+{
+    IReadOnlyDictionary<string, string[]> Errors { get; }
+}

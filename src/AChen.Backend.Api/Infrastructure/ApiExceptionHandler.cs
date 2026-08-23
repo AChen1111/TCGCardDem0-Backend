@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using AChen.Backend.Api.Features.ContentDelivery;
 
 namespace AChen.Backend.Api.Infrastructure;
 
@@ -34,7 +33,7 @@ public sealed class ApiExceptionHandler(
                 ["traceId"] = httpContext.TraceIdentifier
             }
         };
-        if (exception is ContentValidationException validationException)
+        if (exception is IApiValidationException validationException)
         {
             problemDetails.Extensions["errors"] = validationException.Errors;
         }

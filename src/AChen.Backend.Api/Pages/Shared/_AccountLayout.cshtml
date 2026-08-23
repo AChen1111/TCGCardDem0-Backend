@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111310" />
+    <title>@ViewData["Title"] - AChen</title>
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="~/css/account.css" asp-append-version="true" />
+</head>
+<body class="account-body">
+    <a class="skip-link" href="#register-form">跳到注册表单</a>
+    <header class="account-topbar">
+        <a class="account-brand" asp-page="/Account/Register" aria-label="AChen 玩家账号首页">
+            <span class="account-brand-mark" aria-hidden="true">A</span>
+            <span>AChen <small>PLAYER ACCOUNT</small></span>
+        </a>
+        <div class="service-state" aria-label="账号服务运行正常"><span aria-hidden="true"></span>账号服务在线</div>
+    </header>
+    <main class="account-main">
+        @RenderBody()
+    </main>
+    <footer class="account-footer">
+        <span>© @DateTime.UtcNow.Year AChen</span>
+        <span>安全连接 · 玩家数据由服务器统一管理</span>
+    </footer>
+</body>
+</html>

@@ -1,5 +1,6 @@
 using AChen.Backend.Api.Data;
 using AChen.Backend.Api.Infrastructure;
+using AChen.Backend.Api.Features.Players;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,24 @@ public sealed class AuthService(
     TimeProvider timeProvider)
 {
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)
+    {
+        var user = await AddAccountAsync(request, cancellationToken);
+        var issued = tokenService.Issue(user);
+        user.RefreshSessions.Add(issued.RefreshSession);
+        await SaveAccountAsync(cancellationToken);
+        return ToAuthResponse(user, issued);
+    }
+
+    public async Task<UserResponse> CreateAccountAsync(
+        RegisterRequest request,
+        CancellationToken cancellationToken)
+    {
+        var user = await AddAccountAsync(request, cancellationToken);
+        await SaveAccountAsync(cancellationToken);
+        return ToUserResponse(user);
+    }
+
+    private async Task<User> AddAccountAsync(RegisterRequest request, CancellationToken cancellationToken)
     {
         var username = request.Username.Trim();
         var email = request.Email.Trim().ToLowerInvariant();
@@ -40,10 +59,22 @@ public sealed class AuthService(
         };
         user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
 
-        var issued = tokenService.Issue(user);
-        user.RefreshSessions.Add(issued.RefreshSession);
         db.Users.Add(user);
+        db.PlayerProfiles.Add(new PlayerProfile
+        {
+            UserId = user.Id,
+            Nickname = username,
+            Gold = 0,
+            Revision = 0,
+            CreatedAt = now,
+            UpdatedAt = now
+        });
 
+        return user;
+    }
+
+    private async Task SaveAccountAsync(CancellationToken cancellationToken)
+    {
         try
         {
             await db.SaveChangesAsync(cancellationToken);
@@ -52,8 +83,6 @@ public sealed class AuthService(
         {
             throw new ApiException(StatusCodes.Status409Conflict, "ACCOUNT_EXISTS", "Username or email is already registered.");
         }
-
-        return ToAuthResponse(user, issued);
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken)

@@ -1,3 +1,5 @@
+using AChen.Backend.Api.Features.Players;
+
 namespace AChen.Backend.Api.Features.Auth;
 
 public sealed class User
@@ -11,4 +13,5 @@ public sealed class User
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; set; }
     public List<RefreshSession> RefreshSessions { get; init; } = [];
+    public PlayerProfile? PlayerProfile { get; init; }
 }

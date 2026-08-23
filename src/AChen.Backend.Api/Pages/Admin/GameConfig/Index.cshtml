@@ -1,0 +1,322 @@
+@page "/admin/game-config"
+@model AChen.Backend.Api.Pages.Admin.GameConfig.IndexModel
+@{
+    ViewData["Title"] = "游戏配置工作台";
+    var publishedText = Model.Config.PublishedRevision?.ToString() ?? "未发布";
+    var enabledAvatarCount = Model.Config.Avatars.Count(value => value.IsEnabled);
+    var enabledCardPackCount = Model.Config.CardPacks.Count(value => value.IsEnabled);
+}
+
+<div class="config-workbench">
+    <header class="config-hero">
+        <div class="config-hero-copy">
+            <p class="eyebrow">GAME CONFIG WORKSPACE</p>
+            <h1>游戏配置工作台</h1>
+            <p class="muted">编辑草稿、批量导入、保存 Git 快照，确认后再整份发布给客户端。</p>
+        </div>
+        <form class="publish-form" method="post" asp-page-handler="Publish" data-publish-form>
+            <input type="hidden" name="expectedEditRevision" value="@Model.Config.EditRevision" />
+            <span class="draft-state"><i aria-hidden="true"></i>草稿已同步</span>
+            <button class="primary publish-button" type="submit">发布 Revision @Model.Config.DraftRevision</button>
+        </form>
+    </header>
+
+    <section class="config-status-band" aria-label="配置版本概览">
+        <div class="config-metric primary-metric">
+            <span class="metric-label">线上版本</span>
+            <strong>@publishedText</strong>
+            <span>@(Model.Config.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "尚无客户端可用配置")</span>
+        </div>
+        <div class="config-metric">
+            <span class="metric-label">当前草稿</span>
+            <strong>Revision @Model.Config.DraftRevision</strong>
+            <span>EditRevision @Model.Config.EditRevision</span>
+        </div>
+        <div class="config-metric">
+            <span class="metric-label">头像</span>
+            <strong>@Model.Config.Avatars.Count</strong>
+            <span>@enabledAvatarCount 个已启用</span>
+        </div>
+        <div class="config-metric">
+            <span class="metric-label">卡包</span>
+            <strong>@Model.Config.CardPacks.Count</strong>
+            <span>@enabledCardPackCount 个已启用</span>
+        </div>
+    </section>
+
+    <div class="config-layout">
+        <aside class="config-sidebar">
+            <nav class="config-nav" aria-label="配置工作台导航">
+                <span class="config-nav-title">工作区</span>
+                <a href="#data-tools" class="config-nav-item"><span><b>00</b> 数据工具</span></a>
+                <a href="#avatars" class="config-nav-item"><span><b>01</b> 头像表</span><em>@Model.Config.Avatars.Count</em></a>
+                <a href="#card-packs" class="config-nav-item"><span><b>02</b> 卡包表</span><em>@Model.Config.CardPacks.Count</em></a>
+                <a href="#git-history" class="config-nav-item"><span><b>03</b> Git 历史</span><em>@Model.GitStatus.History.Count</em></a>
+            </nav>
+            <div class="workflow-note">
+                <span class="metric-label">安全发布流程</span>
+                <ol>
+                    <li>编辑或导入到草稿</li>
+                    <li>保存 Git 快照</li>
+                    <li>整份发布给客户端</li>
+                </ol>
+            </div>
+        </aside>
+
+        <main class="config-sections">
+            <section class="config-section data-tools-section" id="data-tools">
+                <header class="section-heading">
+                    <div>
+                        <span class="section-index">00 / DATA TOOLS</span>
+                        <h2>导入、导出与版本同步</h2>
+                        <p>CSV 用于批量调整，Git 用于团队共享和保留可恢复的配置快照。</p>
+                    </div>
+                </header>
+
+                <div class="data-tools-grid">
+                    <article class="tool-panel">
+                        <div class="tool-panel-heading">
+                            <span class="tool-label">CSV</span>
+                            <span class="status-pill ready">可用</span>
+                        </div>
+                        <h3>整份配置文件</h3>
+                        <p>一个 CSV 同时包含头像和卡包。导入会完整校验后原子替换草稿。</p>
+                        <a class="button primary secondary-primary" asp-page-handler="ExportCsv">一键导出当前草稿</a>
+                        <form class="import-form" method="post" enctype="multipart/form-data" asp-page-handler="ImportCsv" data-config-form data-import-form>
+                            <input type="hidden" name="expectedEditRevision" value="@Model.Config.EditRevision" />
+                            <label class="file-drop">
+                                <span>选择 CSV 文件</span>
+                                <small>最大 5 MiB，仅修改草稿</small>
+                                <input type="file" name="csvFile" accept=".csv,text/csv" required />
+                            </label>
+                            <button type="submit" data-submit-label="导入并校验">导入并校验</button>
+                        </form>
+                    </article>
+
+                    <article class="tool-panel git-panel">
+                        <div class="tool-panel-heading">
+                            <span class="tool-label">GIT</span>
+                            @if (Model.GitStatus.IsAvailable)
+                            {
+                                <span class="status-pill @(Model.GitStatus.HasUncommittedDraft ? "pending" : "ready")">
+                                    @(Model.GitStatus.HasUncommittedDraft ? "草稿待保存" : "快照已同步")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="status-pill failed">不可用</span>
+                            }
+                        </div>
+                        <h3>配置版本仓库</h3>
+                        @if (Model.GitStatus.IsAvailable)
+                        {
+                            <p>分支 <code>@Model.GitStatus.Branch</code> · @(Model.GitStatus.HasRemote ? $"远端 {Model.GitStatus.RemoteDisplay}" : "仅本地仓库")</p>
+                            <form class="git-snapshot-form" method="post" asp-page-handler="GitSave" data-config-form>
+                                <label>版本备注<input name="note" maxlength="120" placeholder="例如：调整基础卡包价格" /></label>
+                                <div class="tool-actions">
+                                    <button type="submit" data-submit-label="保存本地快照">保存本地快照</button>
+                                    @if (Model.GitStatus.HasRemote)
+                                    {
+                                        <button class="primary" type="submit" asp-page-handler="GitPush" data-submit-label="提交并上传">提交并上传</button>
+                                    }
+                                </div>
+                            </form>
+                            @if (Model.GitStatus.HasRemote)
+                            {
+                                <form method="post" asp-page-handler="GitPull" data-config-form data-pull-form>
+                                    <button class="link-action" type="submit" data-submit-label="拉取远端历史">拉取远端历史</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <p class="tool-hint">设置服务器配置 <code>GameConfigGit:RemoteUrl</code> 后即可一键上传和拉取。</p>
+                            }
+                        }
+                        else
+                        {
+                            <p class="tool-error">@Model.GitStatus.Error</p>
+                        }
+                    </article>
+                </div>
+            </section>
+
+            <section class="config-section" id="avatars" data-config-section="avatars">
+                <header class="section-heading">
+                    <div>
+                        <span class="section-index">01 / AVATARS</span>
+                        <h2>头像表</h2>
+                        <p>Resource Key 对应 SpriteAddressableCatalog 中已经发布的逻辑 Key。</p>
+                    </div>
+                    <span class="section-count">@Model.Config.Avatars.Count 条配置</span>
+                </header>
+
+                <div class="config-toolbar">
+                    <label class="search-field"><span class="sr-only">搜索头像</span><input type="search" placeholder="搜索 ID、名称或 Resource Key" data-config-search="avatars" /></label>
+                    <label class="filter-field"><span class="sr-only">筛选头像状态</span><select data-config-filter="avatars"><option value="all">全部状态</option><option value="enabled">仅启用</option><option value="disabled">仅停用</option></select></label>
+                    <span class="filter-result" data-config-result="avatars" aria-live="polite"></span>
+                </div>
+
+                <details class="create-panel">
+                    <summary><span>新增头像配置</span><small>创建一个新的稳定 ID</small></summary>
+                    <form class="config-form-grid avatar-create" method="post" asp-page-handler="SaveAvatar" data-config-form>
+                        <input type="hidden" name="expectedEditRevision" value="@Model.Config.EditRevision" />
+                        <label>ID<input type="number" min="1" name="id" required placeholder="例如 1" /></label>
+                        <label>显示名称<input name="name" maxlength="64" required placeholder="默认头像" /></label>
+                        <label>Resource Key<input name="resourceKey" maxlength="128" required placeholder="Avatar_Default" /></label>
+                        <label>排序<input type="number" name="sortOrder" value="0" /></label>
+                        <label class="toggle-field"><input type="checkbox" name="isEnabled" value="true" checked /><span class="toggle-control" aria-hidden="true"></span><span>立即启用</span></label>
+                        <button type="submit" data-submit-label="新增头像">新增头像</button>
+                    </form>
+                </details>
+
+                <div class="config-table-wrap">
+                    <table class="config-table" data-config-table="avatars">
+                        <thead><tr><th>ID</th><th>名称</th><th>Resource Key</th><th>排序</th><th>状态</th><th>操作</th></tr></thead>
+                        <tbody>
+                        @foreach (var avatar in Model.Config.Avatars)
+                        {
+                            var formId = $"avatar-{avatar.Id}";
+                            <tr data-config-item data-search-text="@avatar.Id @avatar.Name @avatar.ResourceKey" data-enabled="@avatar.IsEnabled.ToString().ToLowerInvariant()">
+                                <td data-label="ID"><span class="config-id">#@avatar.Id</span><input form="@formId" type="hidden" name="id" value="@avatar.Id" /></td>
+                                <td data-label="名称"><input form="@formId" name="name" value="@avatar.Name" maxlength="64" required /></td>
+                                <td data-label="Resource Key"><input class="code-input" form="@formId" name="resourceKey" value="@avatar.ResourceKey" maxlength="128" required /></td>
+                                <td data-label="排序"><input class="compact-input" form="@formId" type="number" name="sortOrder" value="@avatar.SortOrder" /></td>
+                                <td data-label="状态"><label class="row-toggle"><input form="@formId" type="checkbox" name="isEnabled" value="true" checked="@avatar.IsEnabled" /><span class="toggle-control" aria-hidden="true"></span><span>@(avatar.IsEnabled ? "启用" : "停用")</span></label></td>
+                                <td class="actions" data-label="操作">
+                                    <form id="@formId" method="post" asp-page-handler="SaveAvatar" data-config-form><input type="hidden" name="expectedEditRevision" value="@Model.Config.EditRevision" /><button class="save-button" type="submit" data-submit-label="保存">保存</button></form>
+                                    <form method="post" asp-page-handler="DeleteAvatar" data-config-form data-delete-form="头像 #@avatar.Id"><input type="hidden" name="id" value="@avatar.Id" /><input type="hidden" name="expectedEditRevision" value="@Model.Config.EditRevision" /><button class="danger ghost-danger" type="submit">删除</button></form>
+                                </td>
+                            </tr>
+                        }
+                        @if (Model.Config.Avatars.Count == 0)
+                        {
+                            <tr class="server-empty"><td colspan="6" class="empty"><strong>还没有头像配置</strong><span>从上方创建第一个头像条目。</span></td></tr>
+                        }
+                        <tr class="filter-empty" data-filter-empty hidden><td colspan="6" class="empty"><strong>没有匹配项</strong><span>换一个关键词或状态筛选。</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="config-section" id="card-packs" data-config-section="card-packs">
+                <header class="section-heading">
+                    <div>
+                        <span class="section-index">02 / CARD PACKS</span>
+                        <h2>卡包表</h2>
+                        <p>客户端根据服务器时间决定卡包是否处于展示时间范围。</p>
+                    </div>
+                    <span class="section-count">@Model.Config.CardPacks.Count 条配置</span>
+                </header>
+
+                <div class="config-toolbar">
+                    <label class="search-field"><span class="sr-only">搜索卡包</span><input type="search" placeholder="搜索 ID、标题或封面 Key" data-config-search="card-packs" /></label>
+                    <label class="filter-field"><span class="sr-only">筛选卡包状态</span><select data-config-filter="card-packs"><option value="all">全部状态</option><option value="enabled">仅启用</option><option value="disabled">仅停用</option></select></label>
+                    <span class="filter-result" data-config-result="card-packs" aria-live="polite"></span>
+                </div>
+
+                <details class="create-panel">
+                    <summary><span>新增卡包配置</span><small>配置展示信息、价格和开放时间</small></summary>
+                    <form class="config-form-grid card-pack-create" method="post" asp-page-handler="SaveCardPack" data-config-form>
+                        <input type="hidden" name="expectedEditRevision" value="@Model.Config.EditRevision" />
+                        <label>ID<input type="number" min="1" name="id" required placeholder="例如 1001" /></label>
+                        <label>标题<input name="title" maxlength="64" required placeholder="基础卡包" /></label>
+                        <label>封面 Resource Key<input name="coverResourceKey" maxlength="128" required placeholder="CardPack_Default" /></label>
+                        <label>金币价格<input type="number" min="0" name="priceGold" value="0" required /></label>
+                        <label>开始时间<input name="startsAt" placeholder="ISO-8601，可留空" /></label>
+                        <label>结束时间<input name="endsAt" placeholder="ISO-8601，可留空" /></label>
+                        <label>排序<input type="number" name="sortOrder" value="0" /></label>
+                        <label class="toggle-field"><input type="checkbox" name="isEnabled" value="true" checked /><span class="toggle-control" aria-hidden="true"></span><span>立即启用</span></label>
+                        <button type="submit" data-submit-label="新增卡包">新增卡包</button>
+                    </form>
+                    <p class="form-help">时间格式示例：2026-08-23T12:00:00+08:00。开始和结束都留空表示长期开放。</p>
+                </details>
+
+                <div class="config-table-wrap wide-table">
+                    <table class="config-table card-pack-table" data-config-table="card-packs">
+                        <thead><tr><th>ID / 标题</th><th>封面 Key</th><th>价格</th><th>开放时间</th><th>排序</th><th>状态</th><th>操作</th></tr></thead>
+                        <tbody>
+                        @foreach (var cardPack in Model.Config.CardPacks)
+                        {
+                            var formId = $"card-pack-{cardPack.Id}";
+                            <tr data-config-item data-search-text="@cardPack.Id @cardPack.Title @cardPack.CoverResourceKey" data-enabled="@cardPack.IsEnabled.ToString().ToLowerInvariant()">
+                                <td data-label="ID / 标题"><span class="config-id">#@cardPack.Id</span><input form="@formId" type="hidden" name="id" value="@cardPack.Id" /><input form="@formId" name="title" value="@cardPack.Title" maxlength="64" required /></td>
+                                <td data-label="封面 Key"><input class="code-input" form="@formId" name="coverResourceKey" value="@cardPack.CoverResourceKey" maxlength="128" required /></td>
+                                <td data-label="价格"><div class="price-input"><input form="@formId" type="number" min="0" name="priceGold" value="@cardPack.PriceGold" required /><span>金币</span></div></td>
+                                <td class="time-range" data-label="开放时间"><input form="@formId" name="startsAt" value="@cardPack.StartsAt?.ToString("O")" placeholder="开始时间" aria-label="开始时间" /><span>至</span><input form="@formId" name="endsAt" value="@cardPack.EndsAt?.ToString("O")" placeholder="结束时间" aria-label="结束时间" /></td>
+                                <td data-label="排序"><input class="compact-input" form="@formId" type="number" name="sortOrder" value="@cardPack.SortOrder" /></td>
+                                <td data-label="状态"><label class="row-toggle"><input form="@formId" type="checkbox" name="isEnabled" value="true" checked="@cardPack.IsEnabled" /><span class="toggle-control" aria-hidden="true"></span><span>@(cardPack.IsEnabled ? "启用" : "停用")</span></label></td>
+                                <td class="actions" data-label="操作">
+                                    <form id="@formId" method="post" asp-page-handler="SaveCardPack" data-config-form><input type="hidden" name="expectedEditRevision" value="@Model.Config.EditRevision" /><button class="save-button" type="submit" data-submit-label="保存">保存</button></form>
+                                    <form method="post" asp-page-handler="DeleteCardPack" data-config-form data-delete-form="卡包 #@cardPack.Id"><input type="hidden" name="id" value="@cardPack.Id" /><input type="hidden" name="expectedEditRevision" value="@Model.Config.EditRevision" /><button class="danger ghost-danger" type="submit">删除</button></form>
+                                </td>
+                            </tr>
+                        }
+                        @if (Model.Config.CardPacks.Count == 0)
+                        {
+                            <tr class="server-empty"><td colspan="7" class="empty"><strong>还没有卡包配置</strong><span>从上方创建第一个卡包条目。</span></td></tr>
+                        }
+                        <tr class="filter-empty" data-filter-empty hidden><td colspan="7" class="empty"><strong>没有匹配项</strong><span>换一个关键词或状态筛选。</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="config-section git-history-section" id="git-history">
+                <header class="section-heading">
+                    <div>
+                        <span class="section-index">03 / VERSION HISTORY</span>
+                        <h2>Git 配置历史</h2>
+                        <p>载入历史版本只会覆盖当前草稿，不会直接修改客户端正在使用的线上版本。</p>
+                    </div>
+                    @if (Model.GitStatus.HeadHash is not null)
+                    {
+                        <span class="section-count">HEAD @Model.GitStatus.HeadHash[..Math.Min(8, Model.GitStatus.HeadHash.Length)]</span>
+                    }
+                </header>
+
+                @if (!Model.GitStatus.IsAvailable)
+                {
+                    <div class="history-empty"><strong>Git 历史暂不可用</strong><span>@Model.GitStatus.Error</span></div>
+                }
+                else if (Model.GitStatus.History.Count == 0)
+                {
+                    <div class="history-empty"><strong>还没有配置快照</strong><span>在上方保存第一次快照后，历史记录会出现在这里。</span></div>
+                }
+                else
+                {
+                    <ol class="commit-list">
+                    @foreach (var commit in Model.GitStatus.History)
+                    {
+                        <li class="commit-item">
+                            <div class="commit-track"><span></span></div>
+                            <div class="commit-copy">
+                                <div><code>@commit.ShortHash</code><time datetime="@commit.CreatedAt.ToString("O")">@commit.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</time></div>
+                                <strong>@commit.Subject</strong>
+                            </div>
+                            <form method="post" asp-page-handler="GitApply" data-config-form data-restore-form="@commit.ShortHash">
+                                <input type="hidden" name="commitHash" value="@commit.Hash" />
+                                <input type="hidden" name="expectedEditRevision" value="@Model.Config.EditRevision" />
+                                <button type="submit" data-submit-label="载入草稿">载入草稿</button>
+                            </form>
+                        </li>
+                    }
+                    </ol>
+                }
+            </section>
+        </main>
+    </div>
+
+    <dialog class="confirm-dialog" id="publish-dialog" aria-labelledby="publish-dialog-title">
+        <div class="dialog-kicker">PUBLISH CONFIG</div>
+        <h2 id="publish-dialog-title">确认发布整份配置？</h2>
+        <p>客户端下一次检查配置时会切换到 Revision @Model.Config.DraftRevision。</p>
+        <dl class="publish-summary">
+            <div><dt>头像</dt><dd>@Model.Config.Avatars.Count 条</dd></div>
+            <div><dt>卡包</dt><dd>@Model.Config.CardPacks.Count 条</dd></div>
+            <div><dt>当前线上</dt><dd>@publishedText</dd></div>
+        </dl>
+        <div class="dialog-actions"><button type="button" data-cancel-publish>继续检查</button><button class="primary" type="button" data-confirm-publish>确认发布</button></div>
+    </dialog>
+</div>
+
+<script src="~/js/game-config-admin.js" asp-append-version="true" defer></script>

@@ -1,3 +1,4 @@
+using AChen.Backend.Api.Infrastructure;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -509,7 +510,7 @@ public sealed class ContentValidationException(Dictionary<string, string[]> erro
     : ContentDeliveryException(
         StatusCodes.Status422UnprocessableEntity,
         "VALIDATION_ERROR",
-        "Request validation failed.")
+        "Request validation failed."), IApiValidationException
 {
-    public Dictionary<string, string[]> Errors { get; } = errors;
+    public IReadOnlyDictionary<string, string[]> Errors { get; } = errors;
 }

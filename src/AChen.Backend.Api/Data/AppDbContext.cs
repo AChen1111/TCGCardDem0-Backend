@@ -1,5 +1,7 @@
 using AChen.Backend.Api.Features.Auth;
 using AChen.Backend.Api.Features.ContentDelivery;
+using AChen.Backend.Api.Features.GameConfig;
+using AChen.Backend.Api.Features.Players;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -9,6 +11,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
+    public DbSet<PlayerProfile> PlayerProfiles => Set<PlayerProfile>();
+    public DbSet<GameConfigVersion> GameConfigVersions => Set<GameConfigVersion>();
+    public DbSet<AvatarDefinition> AvatarDefinitions => Set<AvatarDefinition>();
+    public DbSet<CardPackDefinition> CardPackDefinitions => Set<CardPackDefinition>();
     public DbSet<ContentRelease> ContentReleases => Set<ContentRelease>();
     public DbSet<ContentReleaseFile> ContentReleaseFiles => Set<ContentReleaseFile>();
     public DbSet<ActiveContentRelease> ActiveContentReleases => Set<ActiveContentRelease>();
@@ -37,6 +43,74 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             session.HasOne(value => value.User)
                 .WithMany(value => value.RefreshSessions)
                 .HasForeignKey(value => value.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PlayerProfile>(profile =>
+        {
+            profile.HasKey(value => value.UserId);
+            profile.Property(value => value.Nickname).HasMaxLength(24).IsRequired();
+            profile.Property(value => value.Revision).IsConcurrencyToken();
+            profile.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            profile.Property(value => value.UpdatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            profile.ToTable(table => table.HasCheckConstraint(
+                "CK_PlayerProfiles_Gold_NonNegative",
+                "Gold >= 0"));
+            profile.HasOne(value => value.User)
+                .WithOne(value => value.PlayerProfile)
+                .HasForeignKey<PlayerProfile>(value => value.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameConfigVersion>(version =>
+        {
+            version.HasKey(value => value.Revision);
+            version.Property(value => value.Revision).ValueGeneratedNever();
+            version.Property(value => value.State).HasConversion<string>().HasMaxLength(16).IsRequired();
+            version.Property(value => value.EditRevision).IsConcurrencyToken();
+            version.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            version.Property(value => value.UpdatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            version.Property(value => value.PublishedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            version.HasIndex(value => value.State)
+                .IsUnique()
+                .HasFilter("\"State\" = 'Draft'");
+            version.ToTable(table => table.HasCheckConstraint(
+                "CK_GameConfigVersions_EditRevision_NonNegative",
+                "EditRevision >= 0"));
+        });
+
+        modelBuilder.Entity<AvatarDefinition>(avatar =>
+        {
+            avatar.HasKey(value => new { value.Revision, value.Id });
+            avatar.Property(value => value.Name).HasMaxLength(64).IsRequired();
+            avatar.Property(value => value.ResourceKey).HasMaxLength(128).IsRequired();
+            avatar.HasIndex(value => new { value.Revision, value.ResourceKey }).IsUnique();
+            avatar.HasIndex(value => new { value.Revision, value.SortOrder, value.Id });
+            avatar.ToTable(table => table.HasCheckConstraint(
+                "CK_AvatarDefinitions_Id_Positive",
+                "Id > 0"));
+            avatar.HasOne(value => value.Version)
+                .WithMany(value => value.Avatars)
+                .HasForeignKey(value => value.Revision)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CardPackDefinition>(cardPack =>
+        {
+            cardPack.HasKey(value => new { value.Revision, value.Id });
+            cardPack.Property(value => value.Title).HasMaxLength(64).IsRequired();
+            cardPack.Property(value => value.CoverResourceKey).HasMaxLength(128).IsRequired();
+            cardPack.Property(value => value.StartsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            cardPack.Property(value => value.EndsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            cardPack.HasIndex(value => new { value.Revision, value.SortOrder, value.Id });
+            cardPack.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_CardPackDefinitions_Id_Positive", "Id > 0");
+                table.HasCheckConstraint("CK_CardPackDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
+            });
+            cardPack.HasOne(value => value.Version)
+                .WithMany(value => value.CardPacks)
+                .HasForeignKey(value => value.Revision)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

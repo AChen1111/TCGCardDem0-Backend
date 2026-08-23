@@ -3,6 +3,7 @@ using System;
 using AChen.Backend.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AChen.Backend.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260823094359_PlayerProfiles")]
+    partial class PlayerProfiles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.23");
@@ -288,130 +291,14 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.ToTable("ContentReleaseFiles");
                 });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.AvatarDefinition", b =>
-                {
-                    b.Property<long>("Revision")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ResourceKey")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Revision", "Id");
-
-                    b.HasIndex("Revision", "ResourceKey")
-                        .IsUnique();
-
-                    b.HasIndex("Revision", "SortOrder", "Id");
-
-                    b.ToTable("AvatarDefinitions", t =>
-                        {
-                            t.HasCheckConstraint("CK_AvatarDefinitions_Id_Positive", "Id > 0");
-                        });
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.CardPackDefinition", b =>
-                {
-                    b.Property<long>("Revision")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("CoverResourceKey")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("EndsAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("PriceGold")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long?>("StartsAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Revision", "Id");
-
-                    b.HasIndex("Revision", "SortOrder", "Id");
-
-                    b.ToTable("CardPackDefinitions", t =>
-                        {
-                            t.HasCheckConstraint("CK_CardPackDefinitions_Id_Positive", "Id > 0");
-
-                            t.HasCheckConstraint("CK_CardPackDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", b =>
-                {
-                    b.Property<long>("Revision")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("EditRevision")
-                        .IsConcurrencyToken()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long?>("PublishedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("UpdatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Revision");
-
-                    b.HasIndex("State")
-                        .IsUnique()
-                        .HasFilter("\"State\" = 'Draft'");
-
-                    b.ToTable("GameConfigVersions", t =>
-                        {
-                            t.HasCheckConstraint("CK_GameConfigVersions_EditRevision_NonNegative", "EditRevision >= 0");
-                        });
-                });
-
             modelBuilder.Entity("AChen.Backend.Api.Features.Players.PlayerProfile", b =>
                 {
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("AvatarId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("AvatarId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
@@ -490,28 +377,6 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.Navigation("Release");
                 });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.AvatarDefinition", b =>
-                {
-                    b.HasOne("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", "Version")
-                        .WithMany("Avatars")
-                        .HasForeignKey("Revision")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Version");
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.CardPackDefinition", b =>
-                {
-                    b.HasOne("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", "Version")
-                        .WithMany("CardPacks")
-                        .HasForeignKey("Revision")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Version");
-                });
-
             modelBuilder.Entity("AChen.Backend.Api.Features.Players.PlayerProfile", b =>
                 {
                     b.HasOne("AChen.Backend.Api.Features.Auth.User", "User")
@@ -533,13 +398,6 @@ namespace AChen.Backend.Api.Data.Migrations
             modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.ContentRelease", b =>
                 {
                     b.Navigation("Files");
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", b =>
-                {
-                    b.Navigation("Avatars");
-
-                    b.Navigation("CardPacks");
                 });
 #pragma warning restore 612, 618
         }

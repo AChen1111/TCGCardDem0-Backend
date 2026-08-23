@@ -3,18 +3,19 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] - AChen Content</title>
+    <title>@ViewData["Title"] - AChen 后台</title>
     <link rel="stylesheet" href="~/css/content-admin.css" asp-append-version="true" />
 </head>
 <body>
     <header class="topbar">
-        <a class="brand" asp-page="/Admin/Content/Index">AChen Content</a>
+        <a class="brand" asp-page="/Admin/Content/Index">AChen 后台</a>
         @if (User.Identity?.IsAuthenticated == true)
         {
             <nav>
                 <a asp-page="/Admin/Content/Index">发布版本</a>
                 <a asp-page="/Admin/Content/New">上传版本</a>
                 <a asp-page="/Admin/Content/Publications">发布历史</a>
+                <a asp-page="/Admin/GameConfig/Index">游戏配置</a>
                 <form method="post" asp-page="/Admin/Content/Index" asp-page-handler="Logout">
                     <button class="link-button" type="submit">退出</button>
                 </form>
@@ -24,11 +25,11 @@
     <main class="shell">
         @if (TempData["Message"] is string message)
         {
-            <div class="notice success">@message</div>
+            <div class="notice success" role="status">@message</div>
         }
         @if (TempData["Error"] is string error)
         {
-            <div class="notice error">@error</div>
+            <div class="notice error" role="alert">@error</div>
         }
         @RenderBody()
     </main>
