@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using AChen.Backend.Api.Features.ContentDelivery;
 
 namespace AChen.Backend.Api.Infrastructure;
 
@@ -22,20 +23,26 @@ public sealed class ApiExceptionHandler(
         }
 
         httpContext.Response.StatusCode = statusCode;
+        var problemDetails = new ProblemDetails
+        {
+            Status = statusCode,
+            Title = knownException is null ? "An unexpected error occurred." : exception.Message,
+            Detail = knownException is null ? "The server could not complete the request." : null,
+            Extensions =
+            {
+                ["code"] = code,
+                ["traceId"] = httpContext.TraceIdentifier
+            }
+        };
+        if (exception is ContentValidationException validationException)
+        {
+            problemDetails.Extensions["errors"] = validationException.Errors;
+        }
+
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
-            ProblemDetails = new ProblemDetails
-            {
-                Status = statusCode,
-                Title = knownException is null ? "An unexpected error occurred." : exception.Message,
-                Detail = knownException is null ? "The server could not complete the request." : null,
-                Extensions =
-                {
-                    ["code"] = code,
-                    ["traceId"] = httpContext.TraceIdentifier
-                }
-            },
+            ProblemDetails = problemDetails,
             Exception = exception
         });
     }

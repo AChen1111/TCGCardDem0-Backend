@@ -1,0 +1,34 @@
+@page "/admin/content/releases/new"
+@model AChen.Backend.Api.Pages.Admin.Content.NewModel
+@{
+    ViewData["Title"] = "上传新版本";
+}
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">NEW RELEASE</p>
+        <h1>上传新版本</h1>
+        <p class="muted">请上传 Unity 发布工具生成的完整 ZIP，服务端会逐文件校验。</p>
+    </div>
+</div>
+
+<form class="form-card" method="post" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="validation"></div>
+    <label asp-for="Platform">平台</label>
+    <select asp-for="Platform">
+        @foreach (var platform in Model.Platforms)
+        {
+            <option value="@platform">@platform</option>
+        }
+    </select>
+    <label asp-for="AppVersion">App 版本</label>
+    <input asp-for="AppVersion" placeholder="0.1.0" />
+    <label asp-for="ContentVersion">内容版本（SemVer）</label>
+    <input asp-for="ContentVersion" placeholder="0.1.1" />
+    <label asp-for="Notes">备注</label>
+    <textarea asp-for="Notes" rows="4" maxlength="2000"></textarea>
+    <label asp-for="Artifact">发布 ZIP</label>
+    <input asp-for="Artifact" type="file" accept="application/zip,.zip" />
+    <p class="muted">最大 2 GiB。上传期间请勿关闭页面。</p>
+    <button class="primary" type="submit">上传并校验</button>
+</form>

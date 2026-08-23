@@ -1,0 +1,60 @@
+@page "/admin/content/releases/{id:guid}"
+@model AChen.Backend.Api.Pages.Admin.Content.DetailsModel
+@{
+    ViewData["Title"] = Model.Release.ContentVersion;
+}
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">RELEASE DETAIL</p>
+        <h1>@Model.Release.ContentVersion</h1>
+        <p class="muted">@Model.Release.Platform · App @Model.Release.AppVersion</p>
+    </div>
+    <span class="status @Model.Release.State.ToLowerInvariant()">@Model.Release.State</span>
+</div>
+
+<dl class="summary-grid">
+    <div><dt>Release ID</dt><dd><code>@Model.Release.Id</code></dd></div>
+    <div><dt>文件</dt><dd>@Model.Release.FileCount</dd></div>
+    <div><dt>总大小</dt><dd>@Model.FormatBytes(Model.Release.TotalBytes)</dd></div>
+    <div><dt>创建时间</dt><dd>@Model.Release.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</dd></div>
+    <div><dt>当前版本</dt><dd>@(Model.IsActive ? "是" : "否")</dd></div>
+    <div><dt>失败代码</dt><dd>@(Model.Release.FailureCode ?? "—")</dd></div>
+</dl>
+
+@if (!string.IsNullOrWhiteSpace(Model.Release.Notes))
+{
+    <section class="card"><h2>备注</h2><p>@Model.Release.Notes</p></section>
+}
+
+@if (Model.Release.State == nameof(AChen.Backend.Api.Features.ContentDelivery.ContentReleaseState.Ready) && !Model.IsActive)
+{
+    <form class="action-card" method="post" asp-page-handler="Publish">
+        <input type="hidden" name="expectedCurrentReleaseId" value="@Model.Active?.ReleaseId" />
+        <p>将该版本设为 <strong>development / @Model.Release.Platform / @Model.Release.AppVersion</strong> 当前版本。</p>
+        <button class="primary" type="submit">@(Model.Active is null ? "发布" : "切换 / 回滚到此版本")</button>
+    </form>
+}
+
+@if (Model.Release.State != nameof(AChen.Backend.Api.Features.ContentDelivery.ContentReleaseState.Ready))
+{
+    <form class="action-card danger-zone" method="post" asp-page-handler="Delete">
+        <p>未完成版本可以删除；Ready 版本永久保留。</p>
+        <button class="danger" type="submit">删除未完成版本</button>
+    </form>
+}
+
+<section class="card">
+    <h2>文件清单</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>路径</th><th>类型</th><th>大小</th><th>SHA-256</th></tr></thead>
+            <tbody>
+            @foreach (var file in Model.Release.Files)
+            {
+                <tr><td><code>@file.RelativePath</code></td><td>@file.Kind</td><td>@Model.FormatBytes(file.Size)</td><td><code class="hash">@file.Sha256</code></td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

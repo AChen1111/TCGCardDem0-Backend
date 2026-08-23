@@ -1,0 +1,32 @@
+@page "/admin/content/publications"
+@model AChen.Backend.Api.Pages.Admin.Content.PublicationsModel
+@{
+    ViewData["Title"] = "发布历史";
+}
+
+<div class="page-heading">
+    <div><p class="eyebrow">AUDIT LOG</p><h1>发布与回滚历史</h1></div>
+</div>
+
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>时间</th><th>目标</th><th>内容版本</th><th>旧 Release</th><th>新 Release</th><th>来源</th></tr></thead>
+        <tbody>
+        @foreach (var item in Model.Publications.Items)
+        {
+            <tr>
+                <td>@item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td>
+                <td>@item.Channel / @item.Platform / @item.AppVersion</td>
+                <td>@item.ContentVersion</td>
+                <td><code>@(item.PreviousReleaseId?.ToString() ?? "—")</code></td>
+                <td><a asp-page="/Admin/Content/Details" asp-route-id="@item.ReleaseId"><code>@item.ReleaseId</code></a></td>
+                <td>@item.Source</td>
+            </tr>
+        }
+        @if (Model.Publications.Items.Count == 0)
+        {
+            <tr><td colspan="6" class="empty">暂无发布记录</td></tr>
+        }
+        </tbody>
+    </table>
+</div>

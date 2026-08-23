@@ -1,6 +1,8 @@
 @host = http://127.0.0.1:5080
 @accessToken = paste-access-token-here
 @refreshToken = paste-refresh-token-here
+@publishKey = paste-content-publish-key-here
+@releaseId = 00000000-0000-0000-0000-000000000000
 
 GET {{host}}/health
 Accept: application/json
@@ -39,6 +41,44 @@ Content-Type: application/json
 {
   "refreshToken": "{{refreshToken}}"
 }
+
+###
+
+POST {{host}}/api/content/releases
+X-Content-Publish-Key: {{publishKey}}
+Content-Type: application/json
+
+{
+  "platform": "StandaloneWindows64",
+  "appVersion": "0.1.0",
+  "contentVersion": "0.1.1",
+  "notes": "first backend release"
+}
+
+###
+
+GET {{host}}/api/content/releases?page=1&pageSize=20&platform=StandaloneWindows64
+X-Content-Publish-Key: {{publishKey}}
+
+###
+
+GET {{host}}/api/content/releases/{{releaseId}}
+X-Content-Publish-Key: {{publishKey}}
+
+### Upload the ZIP with Unity's Build And Publish Release window; raw binary bodies are not embedded here.
+
+PUT {{host}}/api/content/active-releases/development/StandaloneWindows64/0.1.0
+X-Content-Publish-Key: {{publishKey}}
+Content-Type: application/json
+
+{
+  "releaseId": "{{releaseId}}",
+  "expectedCurrentReleaseId": null
+}
+
+###
+
+GET {{host}}/api/content/manifests/latest?channel=development&platform=StandaloneWindows64&appVersion=0.1.0
 
 ###
 

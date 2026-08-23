@@ -1,0 +1,18 @@
+@page "/admin/content/login"
+@model AChen.Backend.Api.Pages.Admin.Content.LoginModel
+@{
+    ViewData["Title"] = "发布后台登录";
+}
+
+<section class="login-card">
+    <p class="eyebrow">CONTENT DELIVERY</p>
+    <h1>发布后台</h1>
+    <p class="muted">使用服务端配置的发布密钥登录。密钥不会保存在浏览器存储中。</p>
+    <form method="post">
+        <input type="hidden" asp-for="ReturnUrl" />
+        <div asp-validation-summary="ModelOnly" class="validation"></div>
+        <label asp-for="PublishKey">发布密钥</label>
+        <input asp-for="PublishKey" type="password" autocomplete="current-password" autofocus />
+        <button class="primary" type="submit">登录</button>
+    </form>
+</section>
