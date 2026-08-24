@@ -24,6 +24,8 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         Assert.NotNull(auth);
         Assert.False(string.IsNullOrWhiteSpace(auth.AccessToken));
         Assert.False(string.IsNullOrWhiteSpace(auth.RefreshToken));
+        Assert.NotNull(auth.Player);
+        Assert.Equal("NewPlayer", auth.Player.Nickname);
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
         var meResponse = await client.GetAsync("/api/auth/me");
@@ -144,5 +146,11 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         Assert.Equal(expectedCode, problem.RootElement.GetProperty("code").GetString());
     }
 
-    private sealed record AuthPayload(string AccessToken, string RefreshToken, int ExpiresInSeconds);
+    private sealed record AuthPayload(
+        string AccessToken,
+        string RefreshToken,
+        int ExpiresInSeconds,
+        PlayerPayload Player);
+
+    private sealed record PlayerPayload(string Nickname);
 }

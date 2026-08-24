@@ -11,6 +11,7 @@ public sealed class AuthService(
     AppDbContext db,
     IPasswordHasher<User> passwordHasher,
     TokenService tokenService,
+    PlayerService playerService,
     TimeProvider timeProvider)
 {
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)
@@ -19,7 +20,7 @@ public sealed class AuthService(
         var issued = tokenService.Issue(user);
         user.RefreshSessions.Add(issued.RefreshSession);
         await SaveAccountAsync(cancellationToken);
-        return ToAuthResponse(user, issued);
+        return await ToAuthResponseAsync(user, issued, cancellationToken);
     }
 
     public async Task<UserResponse> CreateAccountAsync(
@@ -114,7 +115,7 @@ public sealed class AuthService(
         var issued = tokenService.Issue(user);
         db.RefreshSessions.Add(issued.RefreshSession);
         await db.SaveChangesAsync(cancellationToken);
-        return ToAuthResponse(user, issued);
+        return await ToAuthResponseAsync(user, issued, cancellationToken);
     }
 
     public async Task<AuthResponse> RefreshAsync(string refreshToken, CancellationToken cancellationToken)
@@ -146,7 +147,7 @@ public sealed class AuthService(
         db.RefreshSessions.Add(issued.RefreshSession);
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return ToAuthResponse(session.User, issued);
+        return await ToAuthResponseAsync(session.User, issued, cancellationToken);
     }
 
     public async Task LogoutAsync(string refreshToken, CancellationToken cancellationToken)
@@ -169,11 +170,15 @@ public sealed class AuthService(
         return ToUserResponse(user);
     }
 
-    private static AuthResponse ToAuthResponse(User user, IssuedTokens issued) => new(
-        issued.AccessToken,
-        issued.RefreshToken,
-        issued.ExpiresInSeconds,
-        ToUserResponse(user));
+    private async Task<AuthResponse> ToAuthResponseAsync(
+        User user,
+        IssuedTokens issued,
+        CancellationToken cancellationToken) => new(
+            issued.AccessToken,
+            issued.RefreshToken,
+            issued.ExpiresInSeconds,
+            ToUserResponse(user),
+            await playerService.GetAsync(user.Id, cancellationToken));
 
     private static UserResponse ToUserResponse(User user) =>
         new(user.Id, user.Username, user.Email, user.CreatedAt);

@@ -1,3 +1,5 @@
+using AChen.Backend.Api.Features.Players;
+
 namespace AChen.Backend.Api.Features.Auth;
 
 public sealed record RegisterRequest(string Username, string Email, string Password);
@@ -18,4 +20,5 @@ public sealed record AuthResponse(
     string AccessToken,
     string RefreshToken,
     int ExpiresInSeconds,
-    UserResponse User);
+    UserResponse User,
+    PlayerResponse Player);
