@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 namespace AChen.Backend.Api.Features.Auth;
@@ -9,21 +8,19 @@ public static partial class AuthValidation
     {
         var errors = new Dictionary<string, string[]>();
         var username = request.Username?.Trim() ?? "";
-        var email = request.Email?.Trim() ?? "";
 
         if (!UsernamePattern().IsMatch(username))
         {
             errors["username"] = ["Username must contain 3-24 letters, numbers, or underscores."];
         }
 
-        if (email.Length > 254 || !new EmailAddressAttribute().IsValid(email))
-        {
-            errors["email"] = ["Email must be a valid address with at most 254 characters."];
-        }
-
         if (request.Password is null || request.Password.Length is < 8 or > 128)
         {
             errors["password"] = ["Password must contain 8-128 characters."];
+        }
+        else if (IsWeakPassword(request.Password))
+        {
+            errors["password"] = ["Password is too weak."];
         }
 
         return errors;
@@ -32,11 +29,11 @@ public static partial class AuthValidation
     public static Dictionary<string, string[]> Validate(LoginRequest request)
     {
         var errors = new Dictionary<string, string[]>();
-        var identifier = request.Identifier?.Trim() ?? "";
+        var username = request.Username?.Trim() ?? "";
 
-        if (identifier.Length is < 1 or > 254)
+        if (!UsernamePattern().IsMatch(username))
         {
-            errors["identifier"] = ["Identifier must contain 1-254 characters."];
+            errors["username"] = ["Username must contain 3-24 letters, numbers, or underscores."];
         }
 
         if (request.Password is null || request.Password.Length is < 8 or > 128)
@@ -62,4 +59,24 @@ public static partial class AuthValidation
 
     [GeneratedRegex("^[A-Za-z0-9_]{3,24}$", RegexOptions.CultureInvariant)]
     private static partial Regex UsernamePattern();
+
+    private static bool IsWeakPassword(string password)
+    {
+        var hasLetter = false;
+        var hasNumberOrSymbol = false;
+
+        foreach (var character in password)
+        {
+            if (char.IsLetter(character))
+            {
+                hasLetter = true;
+            }
+            else
+            {
+                hasNumberOrSymbol = true;
+            }
+        }
+
+        return !hasLetter || !hasNumberOrSymbol;
+    }
 }

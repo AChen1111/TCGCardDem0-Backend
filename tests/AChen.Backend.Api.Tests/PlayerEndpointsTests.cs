@@ -22,7 +22,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     [Fact]
     public async Task Registration_creates_default_player_data()
     {
-        using var client = await CreateAuthenticatedClientAsync("BasicPlayer", "basic@example.com");
+        using var client = await CreateAuthenticatedClientAsync("BasicPlayer");
 
         var response = await client.GetAsync("/api/player/bootstrap");
         response.EnsureSuccessStatusCode();
@@ -40,7 +40,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     public async Task Profile_update_changes_editable_fields_but_not_gold()
     {
         await EnsurePublishedAvatarAsync(2002);
-        using var client = await CreateAuthenticatedClientAsync("EditPlayer", "edit@example.com");
+        using var client = await CreateAuthenticatedClientAsync("EditPlayer");
         var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
         Assert.NotNull(initial);
 
@@ -64,7 +64,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     [Fact]
     public async Task Stale_profile_revision_is_rejected()
     {
-        using var client = await CreateAuthenticatedClientAsync("RevisionPlayer", "revision@example.com");
+        using var client = await CreateAuthenticatedClientAsync("RevisionPlayer");
         var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
         Assert.NotNull(initial);
 
@@ -93,8 +93,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     public async Task Profile_update_validates_nickname_and_avatar(string nickname, int? avatarId)
     {
         using var client = await CreateAuthenticatedClientAsync(
-            "Validation" + Guid.NewGuid().ToString("N")[..8],
-            $"{Guid.NewGuid():N}@example.com");
+            "Validation" + Guid.NewGuid().ToString("N")[..8]);
 
         var response = await client.PatchAsJsonAsync("/api/player/profile", new
         {
@@ -113,8 +112,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     public async Task Profile_update_rejects_avatar_outside_published_config()
     {
         using var client = await CreateAuthenticatedClientAsync(
-            "MissingAvatar",
-            $"{Guid.NewGuid():N}@example.com");
+            "MissingAvatar");
 
         var response = await client.PatchAsJsonAsync("/api/player/profile", new
         {
@@ -132,7 +130,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     {
         const int avatarId = 3003;
         await EnsurePublishedAvatarAsync(avatarId);
-        using var client = await CreateAuthenticatedClientAsync("DisabledAvatar", "disabled-avatar@example.com");
+        using var client = await CreateAuthenticatedClientAsync("DisabledAvatar");
         var selected = await client.PatchAsJsonAsync("/api/player/profile", new
         {
             nickname = "Before Disable",
@@ -158,8 +156,8 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     [Fact]
     public async Task Player_data_is_isolated_by_authenticated_user()
     {
-        using var first = await CreateAuthenticatedClientAsync("FirstPlayer", "first-player@example.com");
-        using var second = await CreateAuthenticatedClientAsync("SecondPlayer", "second-player@example.com");
+        using var first = await CreateAuthenticatedClientAsync("FirstPlayer");
+        using var second = await CreateAuthenticatedClientAsync("SecondPlayer");
 
         var firstPlayer = await first.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
         var secondPlayer = await second.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
@@ -171,13 +169,12 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.Equal("SecondPlayer", secondPlayer.Nickname);
     }
 
-    private async Task<HttpClient> CreateAuthenticatedClientAsync(string username, string email)
+    private async Task<HttpClient> CreateAuthenticatedClientAsync(string username)
     {
         var client = factory.CreateClient();
         var response = await client.PostAsJsonAsync("/api/auth/register", new
         {
             username,
-            email,
             password = "correct-horse-42"
         });
         response.EnsureSuccessStatusCode();

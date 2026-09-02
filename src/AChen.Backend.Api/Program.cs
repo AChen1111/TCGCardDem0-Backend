@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using AChen.Backend.Api.Data;
+using AChen.Backend.Api.Features.AccountManagement;
 using AChen.Backend.Api.Features.Auth;
 using AChen.Backend.Api.Features.ContentDelivery;
 using AChen.Backend.Api.Features.GameConfig;
@@ -57,6 +58,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<AccountManagementService>();
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<IGameConfigRepository, GameConfigRepository>();

@@ -27,11 +27,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             user.HasKey(value => value.Id);
             user.Property(value => value.Username).HasMaxLength(24).IsRequired();
             user.Property(value => value.NormalizedUsername).HasMaxLength(24).IsRequired();
-            user.Property(value => value.Email).HasMaxLength(254).IsRequired();
-            user.Property(value => value.NormalizedEmail).HasMaxLength(254).IsRequired();
             user.Property(value => value.PasswordHash).IsRequired();
             user.HasIndex(value => value.NormalizedUsername).IsUnique();
-            user.HasIndex(value => value.NormalizedEmail).IsUnique();
         });
 
         modelBuilder.Entity<RefreshSession>(session =>

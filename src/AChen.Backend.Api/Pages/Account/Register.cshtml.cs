@@ -28,7 +28,7 @@ public sealed class RegisterModel(AuthService authService) : PageModel
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
-        var request = new RegisterRequest(Input.Username, Input.Email, Input.Password);
+        var request = new RegisterRequest(Input.Username, Input.Password);
         AddDomainValidationErrors(AuthValidation.Validate(request));
         if (!ModelState.IsValid)
         {
@@ -45,7 +45,7 @@ public sealed class RegisterModel(AuthService authService) : PageModel
         }
         catch (ApiException exception) when (exception.Code == "ACCOUNT_EXISTS")
         {
-            ModelState.AddModelError(string.Empty, "该用户名或邮箱已被注册，请更换后重试。");
+            ModelState.AddModelError(string.Empty, "该用户名已被注册，请更换后重试。");
             ClearPasswords();
             return Page();
         }
@@ -58,7 +58,6 @@ public sealed class RegisterModel(AuthService authService) : PageModel
             var modelKey = field switch
             {
                 "username" => nameof(Input) + "." + nameof(Input.Username),
-                "email" => nameof(Input) + "." + nameof(Input.Email),
                 "password" => nameof(Input) + "." + nameof(Input.Password),
                 _ => string.Empty
             };
@@ -78,7 +77,7 @@ public sealed class RegisterModel(AuthService authService) : PageModel
     private static string TranslateValidationMessage(string field, string fallback) => field switch
     {
         "username" => "用户名需为 3–24 位，只能包含英文字母、数字或下划线。",
-        "email" => "请输入有效的邮箱地址，长度不能超过 254 个字符。",
+        "password" when fallback == "Password is too weak." => "密码过弱。",
         "password" => "密码长度需为 8–128 位。",
         _ => fallback
     };
@@ -94,11 +93,6 @@ public sealed class RegisterModel(AuthService authService) : PageModel
         [Required(ErrorMessage = "请输入用户名。")]
         [RegularExpression("^[A-Za-z0-9_]{3,24}$", ErrorMessage = "用户名需为 3–24 位，只能包含英文字母、数字或下划线。")]
         public string Username { get; set; } = "";
-
-        [Required(ErrorMessage = "请输入邮箱地址。")]
-        [StringLength(254, ErrorMessage = "邮箱长度不能超过 254 个字符。")]
-        [EmailAddress(ErrorMessage = "请输入有效的邮箱地址。")]
-        public string Email { get; set; } = "";
 
         [Required(ErrorMessage = "请输入密码。")]
         [StringLength(128, MinimumLength = 8, ErrorMessage = "密码长度需为 8–128 位。")]

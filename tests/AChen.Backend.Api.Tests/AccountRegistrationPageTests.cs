@@ -39,7 +39,6 @@ public sealed class AccountRegistrationPageTests
         using var response = await browser.PostAsync("/register", Form(
             token,
             username: "WebPlayer",
-            email: "WebPlayer@example.com",
             password: "correct-horse-42",
             confirmation: "correct-horse-42"));
 
@@ -58,7 +57,6 @@ public sealed class AccountRegistrationPageTests
         var user = await db.Users.SingleAsync();
         var profile = await db.PlayerProfiles.SingleAsync();
         Assert.Equal("WebPlayer", user.Username);
-        Assert.Equal("webplayer@example.com", user.Email);
         Assert.Equal(user.Id, profile.UserId);
         Assert.Equal("WebPlayer", profile.Nickname);
         Assert.Empty(await db.RefreshSessions.ToListAsync());
@@ -75,14 +73,12 @@ public sealed class AccountRegistrationPageTests
         using var response = await browser.PostAsync("/register", Form(
             token,
             username: "x!",
-            email: "not-an-email",
             password: "secret-should-never-return-42",
             confirmation: "different-secret-42"));
         var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("用户名需为 3–24 位", html, StringComparison.Ordinal);
-        Assert.Contains("请输入有效的邮箱地址", html, StringComparison.Ordinal);
         Assert.Contains("两次输入的密码不一致", html, StringComparison.Ordinal);
         Assert.DoesNotContain("secret-should-never-return-42", html, StringComparison.Ordinal);
         Assert.DoesNotContain("different-secret-42", html, StringComparison.Ordinal);
@@ -96,7 +92,6 @@ public sealed class AccountRegistrationPageTests
         using var existing = await browser.PostAsJsonAsync("/api/auth/register", new
         {
             username = "ExistingPlayer",
-            email = "existing@example.com",
             password = "correct-horse-42"
         });
         Assert.Equal(HttpStatusCode.Created, existing.StatusCode);
@@ -106,19 +101,17 @@ public sealed class AccountRegistrationPageTests
         using var duplicate = await browser.PostAsync("/register", Form(
             token,
             username: "existingplayer",
-            email: "other@example.com",
             password: "another-password-42",
             confirmation: "another-password-42"));
         var duplicateHtml = WebUtility.HtmlDecode(await duplicate.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, duplicate.StatusCode);
-        Assert.Contains("该用户名或邮箱已被注册", duplicateHtml, StringComparison.Ordinal);
+        Assert.Contains("该用户名已被注册", duplicateHtml, StringComparison.Ordinal);
         Assert.DoesNotContain("another-password-42", duplicateHtml, StringComparison.Ordinal);
 
         using var withoutToken = await browser.PostAsync("/register", Form(
             token: null,
             username: "NoCsrfPlayer",
-            email: "no-csrf@example.com",
             password: "correct-horse-42",
             confirmation: "correct-horse-42"));
         Assert.Equal(HttpStatusCode.BadRequest, withoutToken.StatusCode);
@@ -135,14 +128,12 @@ public sealed class AccountRegistrationPageTests
     private static FormUrlEncodedContent Form(
         string? token,
         string username,
-        string email,
         string password,
         string confirmation)
     {
         var values = new Dictionary<string, string>
         {
             ["Input.Username"] = username,
-            ["Input.Email"] = email,
             ["Input.Password"] = password,
             ["Input.ConfirmPassword"] = confirmation
         };

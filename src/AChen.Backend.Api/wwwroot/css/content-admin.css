@@ -66,6 +66,18 @@ dd { margin: 0; word-break: break-all; }
 .actions button { padding: 8px 11px; }
 .danger-zone { border-color: #6d2b37; }
 .hash { font-size: 11px; word-break: break-all; }
+.account-heading { align-items: end; }
+.account-total { min-width: 130px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); text-align: right; }
+.account-total strong { display: block; font-size: 28px; line-height: 1; }
+.account-total span, .account-id { color: var(--muted); font-size: 11px; }
+.account-filters label { min-width: min(420px, 100%); }
+.account-filters .button { min-height: 42px; display: inline-flex; align-items: center; }
+.account-table { min-width: 1050px; }
+.account-table td { vertical-align: middle; }
+.account-table td:first-child strong, .account-id { display: block; }
+.account-id { margin-top: 4px; font-family: ui-monospace, "Cascadia Code", monospace; }
+.account-actions { text-align: right; }
+.pagination { margin-top: 18px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
 .notice { margin-bottom: 20px; border-radius: 8px; padding: 12px 15px; }
 .notice.success { color: var(--accent); background: #123328; }
 .notice.error, .validation { color: #ff9aa5; background: #3b1d24; }

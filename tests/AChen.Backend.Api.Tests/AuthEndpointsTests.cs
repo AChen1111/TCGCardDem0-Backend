@@ -15,7 +15,6 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         var response = await client.PostAsJsonAsync("/api/auth/register", new
         {
             username = "NewPlayer",
-            email = "player@example.com",
             password = "correct-horse-42"
         });
 
@@ -33,22 +32,19 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
         using var me = JsonDocument.Parse(await meResponse.Content.ReadAsStringAsync());
         Assert.Equal("NewPlayer", me.RootElement.GetProperty("username").GetString());
-        Assert.Equal("player@example.com", me.RootElement.GetProperty("email").GetString());
+        Assert.False(me.RootElement.TryGetProperty("email", out _));
     }
 
     [Fact]
-    public async Task Register_rejects_case_insensitive_duplicate_username_and_email()
+    public async Task Register_rejects_case_insensitive_duplicate_username()
     {
-        var first = await RegisterAsync("DuplicateOne", "duplicate@example.com");
+        var first = await RegisterAsync("DuplicateOne");
         Assert.Equal(HttpStatusCode.Created, first.StatusCode);
 
-        var duplicateUsername = await RegisterAsync("duplicateone", "other@example.com");
-        var duplicateEmail = await RegisterAsync("OtherPlayer", "DUPLICATE@example.com");
+        var duplicateUsername = await RegisterAsync("duplicateone");
 
         Assert.Equal(HttpStatusCode.Conflict, duplicateUsername.StatusCode);
-        Assert.Equal(HttpStatusCode.Conflict, duplicateEmail.StatusCode);
         await AssertErrorCodeAsync(duplicateUsername, "ACCOUNT_EXISTS");
-        await AssertErrorCodeAsync(duplicateEmail, "ACCOUNT_EXISTS");
     }
 
     [Fact]
@@ -57,7 +53,6 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         var response = await client.PostAsJsonAsync("/api/auth/register", new
         {
             username = "x!",
-            email = "not-an-email",
             password = "short"
         });
 
@@ -65,22 +60,19 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var errors = problem.RootElement.GetProperty("errors");
         Assert.True(errors.TryGetProperty("username", out _));
-        Assert.True(errors.TryGetProperty("email", out _));
         Assert.True(errors.TryGetProperty("password", out _));
     }
 
     [Fact]
-    public async Task Login_accepts_username_or_email_and_rejects_wrong_password()
+    public async Task Login_accepts_case_insensitive_username_and_rejects_wrong_password()
     {
-        var register = await RegisterAsync("LoginPlayer", "login@example.com");
+        var register = await RegisterAsync("LoginPlayer");
         Assert.Equal(HttpStatusCode.Created, register.StatusCode);
 
         var byUsername = await LoginAsync("loginplayer", "correct-horse-42");
-        var byEmail = await LoginAsync("LOGIN@example.com", "correct-horse-42");
         var wrongPassword = await LoginAsync("LoginPlayer", "wrong-password");
 
         Assert.Equal(HttpStatusCode.OK, byUsername.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, byEmail.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, wrongPassword.StatusCode);
         await AssertErrorCodeAsync(wrongPassword, "INVALID_CREDENTIALS");
     }
@@ -88,7 +80,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
     [Fact]
     public async Task Refresh_rotates_token_and_rejects_reuse()
     {
-        var register = await RegisterAsync("RefreshPlayer", "refresh@example.com");
+        var register = await RegisterAsync("RefreshPlayer");
         var original = await register.Content.ReadFromJsonAsync<AuthPayload>();
         Assert.NotNull(original);
 
@@ -106,7 +98,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
     [Fact]
     public async Task Logout_revokes_refresh_token()
     {
-        var register = await RegisterAsync("LogoutPlayer", "logout@example.com");
+        var register = await RegisterAsync("LogoutPlayer");
         var auth = await register.Content.ReadFromJsonAsync<AuthPayload>();
         Assert.NotNull(auth);
 
@@ -126,16 +118,15 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         await AssertErrorCodeAsync(response, "INVALID_ACCESS_TOKEN");
     }
 
-    private Task<HttpResponseMessage> RegisterAsync(string username, string email) =>
+    private Task<HttpResponseMessage> RegisterAsync(string username) =>
         client.PostAsJsonAsync("/api/auth/register", new
         {
             username,
-            email,
             password = "correct-horse-42"
         });
 
-    private Task<HttpResponseMessage> LoginAsync(string identifier, string password) =>
-        client.PostAsJsonAsync("/api/auth/login", new { identifier, password });
+    private Task<HttpResponseMessage> LoginAsync(string username, string password) =>
+        client.PostAsJsonAsync("/api/auth/login", new { username, password });
 
     private Task<HttpResponseMessage> RefreshAsync(string refreshToken) =>
         client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken });

@@ -8,10 +8,11 @@
 </head>
 <body>
     <header class="topbar">
-        <a class="brand" asp-page="/Admin/Content/Index">AChen 后台</a>
-        @if (User.Identity?.IsAuthenticated == true)
-        {
-            <nav>
+        <a class="brand" asp-page="/Admin/Accounts/Index">AChen 后台</a>
+        <nav>
+            <a asp-page="/Admin/Accounts/Index">账号管理</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
                 <a asp-page="/Admin/Content/Index">发布版本</a>
                 <a asp-page="/Admin/Content/New">上传版本</a>
                 <a asp-page="/Admin/Content/Publications">发布历史</a>
@@ -19,8 +20,8 @@
                 <form method="post" asp-page="/Admin/Content/Index" asp-page-handler="Logout">
                     <button class="link-button" type="submit">退出</button>
                 </form>
-            </nav>
-        }
+            }
+        </nav>
     </header>
     <main class="shell">
         @if (TempData["Message"] is string message)
