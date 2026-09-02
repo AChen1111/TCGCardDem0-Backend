@@ -3,6 +3,7 @@ using System;
 using AChen.Backend.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AChen.Backend.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260902143000_PlayerBackgroundId")]
+    partial class PlayerBackgroundId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.23");
@@ -412,10 +415,6 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.Property<string>("Nickname")
                         .IsRequired()
                         .HasMaxLength(24)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("OwnedAvatarIds")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<long>("Revision")

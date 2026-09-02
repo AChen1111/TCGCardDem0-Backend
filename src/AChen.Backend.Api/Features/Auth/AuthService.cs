@@ -57,15 +57,7 @@ public sealed class AuthService(
         user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
 
         db.Users.Add(user);
-        db.PlayerProfiles.Add(new PlayerProfile
-        {
-            UserId = user.Id,
-            Nickname = username,
-            Gold = 0,
-            Revision = 0,
-            CreatedAt = now,
-            UpdatedAt = now
-        });
+        db.PlayerProfiles.Add(PlayerProfile.ForNewAccount(user.Id, username, now));
 
         return user;
     }

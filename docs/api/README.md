@@ -19,8 +19,8 @@
 | POST | `/api/auth/refresh` | 无 | 刷新并轮换 Token |
 | POST | `/api/auth/logout` | 无 | 吊销 Refresh Token |
 | GET | `/api/auth/me` | Bearer | 当前用户 |
-| GET | `/api/player/bootstrap` | Bearer | 当前玩家数据 |
-| PATCH | `/api/player/profile` | Bearer | 更新昵称和头像 |
+| GET | `/api/player/bootstrap` | Bearer | 当前玩家数据（含当前头像和已拥有头像列表） |
+| PATCH | `/api/player/profile` | Bearer | 更新昵称、当前头像和背景图；不能改已拥有头像列表 |
 | GET | `/api/game-config/bootstrap` | 无 | 已发布的头像和卡包配置；支持 `If-None-Match` |
 | POST | `/api/content/releases` | Publish Key | 创建内容 Release |
 | PUT | `/api/content/releases/{id}/artifact` | Publish Key | 上传 `application/zip` 内容包 |
@@ -51,9 +51,12 @@
 {
   "nickname": "Local Player",
   "avatarId": 1,
+  "backgroundId": 1,
   "expectedRevision": 0
 }
 ```
+
+玩家数据含 `avatarId`（当前头像）和 `ownedAvatarIds`（已拥有头像 ID 列表）。注册默认昵称等于账号、`avatarId` 为 0、`backgroundId` 为 1，并拥有头像 0。`PATCH /api/player/profile` 只能装备已拥有且已发布的头像，不能改拥有列表。
 
 创建内容 Release：
 

@@ -76,8 +76,23 @@ dd { margin: 0; word-break: break-all; }
 .account-table td { vertical-align: middle; }
 .account-table td:first-child strong, .account-id { display: block; }
 .account-id { margin-top: 4px; font-family: ui-monospace, "Cascadia Code", monospace; }
-.account-actions { text-align: right; }
+.account-actions { display: flex; justify-content: flex-end; gap: 8px; text-align: right; white-space: nowrap; }
+.account-actions .button, .account-actions button { padding: 8px 11px; }
 .pagination { margin-top: 18px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
+.player-edit-layout { display: grid; grid-template-columns: minmax(0, 680px) minmax(240px, 1fr); gap: 22px; align-items: start; }
+.player-data-form { max-width: none; }
+.player-fields-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.form-hint, .field-error { font-size: 12px; }
+.form-hint { color: var(--muted); }
+.field-error { color: #ff9aa5; }
+.field-error:empty { display: none; }
+.form-actions { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+.form-actions .button { min-height: 42px; display: inline-flex; align-items: center; }
+.player-system-card { padding: 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.player-system-card h2 { font-size: 20px; }
+.player-system-card dl { margin: 18px 0; display: grid; gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--line); }
+.player-system-card dl div { padding: 12px; background: var(--panel-raised); }
+.player-system-card .muted { margin-bottom: 0; font-size: 12px; }
 .notice { margin-bottom: 20px; border-radius: 8px; padding: 12px 15px; }
 .notice.success { color: var(--accent); background: #123328; }
 .notice.error, .validation { color: #ff9aa5; background: #3b1d24; }
@@ -273,4 +288,7 @@ code { color: #b8c8db; }
     nav { align-items: flex-end; flex-direction: column; gap: 8px; }
     .filters, .page-heading { align-items: stretch; flex-direction: column; }
     .inline-create, .inline-create.card-pack { grid-template-columns: 1fr; }
+    .player-edit-layout, .player-fields-row { grid-template-columns: 1fr; }
+    .form-actions { align-items: stretch; flex-direction: column; }
+    .form-actions .button { justify-content: center; }
 }

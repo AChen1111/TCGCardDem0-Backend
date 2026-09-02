@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using AChen.Backend.Api.Data;
+using AChen.Backend.Api.Features.Players;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -59,6 +60,9 @@ public sealed class AccountRegistrationPageTests
         Assert.Equal("WebPlayer", user.Username);
         Assert.Equal(user.Id, profile.UserId);
         Assert.Equal("WebPlayer", profile.Nickname);
+        Assert.Equal(PlayerProfile.DefaultAvatarId, profile.AvatarId);
+        Assert.Equal(PlayerProfile.DefaultBackgroundId, profile.BackgroundId);
+        Assert.Equal(new[] { PlayerProfile.DefaultAvatarId }, profile.OwnedAvatarIds);
         Assert.Empty(await db.RefreshSessions.ToListAsync());
     }
 

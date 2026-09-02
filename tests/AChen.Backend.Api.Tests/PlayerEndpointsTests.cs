@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AChen.Backend.Api.Features.GameConfig;
+using AChen.Backend.Api.Features.Players;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AChen.Backend.Api.Tests;
@@ -31,7 +32,9 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.NotNull(player);
         Assert.NotEqual(Guid.Empty, player.Id);
         Assert.Equal("BasicPlayer", player.Nickname);
-        Assert.Null(player.AvatarId);
+        Assert.Equal(0, player.AvatarId);
+        Assert.Equal(new[] { 0 }, player.OwnedAvatarIds);
+        Assert.Equal(1, player.BackgroundId);
         Assert.Equal(0, player.Gold);
         Assert.Equal(0, player.Revision);
     }
@@ -43,11 +46,15 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         using var client = await CreateAuthenticatedClientAsync("EditPlayer");
         var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
         Assert.NotNull(initial);
+        await GrantAvatarAsync(initial.Id, 2002);
+        initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
 
         var response = await client.PatchAsJsonAsync("/api/player/profile", new
         {
             nickname = "新昵称",
             avatarId = 2002,
+            backgroundId = 3,
             expectedRevision = initial.Revision,
             gold = 999999
         });
@@ -57,8 +64,46 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.NotNull(updated);
         Assert.Equal("新昵称", updated.Nickname);
         Assert.Equal(2002, updated.AvatarId);
+        Assert.Equal(new[] { 0, 2002 }, updated.OwnedAvatarIds);
+        Assert.Equal(3, updated.BackgroundId);
         Assert.Equal(0, updated.Gold);
-        Assert.Equal(1, updated.Revision);
+        Assert.Equal(initial.Revision + 1, updated.Revision);
+    }
+
+    [Fact]
+    public async Task Profile_update_rejects_unowned_published_avatar()
+    {
+        await EnsurePublishedAvatarAsync(2002);
+        using var client = await CreateAuthenticatedClientAsync("UnownedAvatar");
+
+        var response = await client.PatchAsJsonAsync("/api/player/profile", new
+        {
+            nickname = "Valid Name",
+            avatarId = 2002,
+            expectedRevision = 0
+        });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        await AssertErrorCodeAsync(response, "AVATAR_NOT_OWNED");
+    }
+
+    [Fact]
+    public async Task Granting_avatar_adds_it_to_owned_list_without_equipping()
+    {
+        const int avatarId = 4004;
+        await EnsurePublishedAvatarAsync(avatarId);
+        using var client = await CreateAuthenticatedClientAsync("GrantAvatar");
+        var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
+
+        var granted = await GrantAvatarAsync(initial.Id, avatarId);
+        Assert.Equal(0, granted.AvatarId);
+        Assert.Equal(new[] { 0, avatarId }, granted.OwnedAvatarIds);
+        Assert.Equal(1, granted.Revision);
+
+        var again = await GrantAvatarAsync(initial.Id, avatarId);
+        Assert.Equal(new[] { 0, avatarId }, again.OwnedAvatarIds);
+        Assert.Equal(1, again.Revision);
     }
 
     [Fact]
@@ -88,9 +133,13 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     }
 
     [Theory]
-    [InlineData(" ", null)]
-    [InlineData("Valid Name", -1)]
-    public async Task Profile_update_validates_nickname_and_avatar(string nickname, int? avatarId)
+    [InlineData(" ", null, null)]
+    [InlineData("Valid Name", -1, null)]
+    [InlineData("Valid Name", null, -1)]
+    public async Task Profile_update_validates_nickname_avatar_and_background(
+        string nickname,
+        int? avatarId,
+        int? backgroundId)
     {
         using var client = await CreateAuthenticatedClientAsync(
             "Validation" + Guid.NewGuid().ToString("N")[..8]);
@@ -99,6 +148,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         {
             nickname,
             avatarId,
+            backgroundId,
             expectedRevision = 0
         });
 
@@ -131,11 +181,14 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         const int avatarId = 3003;
         await EnsurePublishedAvatarAsync(avatarId);
         using var client = await CreateAuthenticatedClientAsync("DisabledAvatar");
+        var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
+        await GrantAvatarAsync(initial.Id, avatarId);
         var selected = await client.PatchAsJsonAsync("/api/player/profile", new
         {
             nickname = "Before Disable",
             avatarId,
-            expectedRevision = 0
+            expectedRevision = 1
         });
         selected.EnsureSuccessStatusCode();
 
@@ -144,7 +197,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         {
             nickname = "After Disable",
             avatarId,
-            expectedRevision = 1
+            expectedRevision = 2
         });
         nicknameOnly.EnsureSuccessStatusCode();
         var player = await nicknameOnly.Content.ReadFromJsonAsync<PlayerPayload>();
@@ -182,6 +235,21 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.NotNull(auth);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
         return client;
+    }
+
+    private async Task<PlayerPayload> GrantAvatarAsync(Guid userId, int avatarId)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<PlayerService>();
+        var player = await service.GrantAvatarAsync(userId, avatarId, CancellationToken.None);
+        return new PlayerPayload(
+            player.Id,
+            player.Nickname,
+            player.AvatarId,
+            player.OwnedAvatarIds,
+            player.BackgroundId,
+            player.Gold,
+            player.Revision);
     }
 
     private async Task EnsurePublishedAvatarAsync(int id)
@@ -234,6 +302,8 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Guid Id,
         string Nickname,
         int? AvatarId,
+        IReadOnlyList<int> OwnedAvatarIds,
+        int? BackgroundId,
         long Gold,
         long Revision);
 }

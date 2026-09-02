@@ -11,9 +11,14 @@ public static class PlayerValidation
             errors["nickname"] = ["Nickname must contain 2-24 characters and cannot contain control characters."];
         }
 
-        if (request.AvatarId is <= 0)
+        if (request.AvatarId is < 0)
         {
-            errors["avatarId"] = ["AvatarId must be greater than zero."];
+            errors["avatarId"] = ["AvatarId cannot be negative."];
+        }
+
+        if (request.BackgroundId is <= 0)
+        {
+            errors["backgroundId"] = ["BackgroundId must be greater than zero."];
         }
 
         if (request.ExpectedRevision < 0)

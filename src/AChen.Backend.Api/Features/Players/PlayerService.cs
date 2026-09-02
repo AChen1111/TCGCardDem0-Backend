@@ -33,18 +33,21 @@ public sealed class PlayerService(
             throw Changed();
         }
 
-        if (request.AvatarId != profile.AvatarId &&
-            request.AvatarId is int avatarId &&
-            !await gameConfigService.IsAvatarAvailableAsync(avatarId, cancellationToken))
+        if (request.AvatarId != profile.AvatarId && request.AvatarId is int avatarId)
         {
-            throw new ApiException(
-                StatusCodes.Status422UnprocessableEntity,
-                "AVATAR_NOT_AVAILABLE",
-                "Avatar does not exist or is not enabled in the published game configuration.");
+            await EnsureAvatarAvailableAsync(avatarId, cancellationToken);
+            if (!profile.OwnedAvatarIds.Contains(avatarId))
+            {
+                throw new ApiException(
+                    StatusCodes.Status422UnprocessableEntity,
+                    "AVATAR_NOT_OWNED",
+                    "Avatar is not in the player's owned avatar list.");
+            }
         }
 
         profile.Nickname = request.Nickname.Trim();
         profile.AvatarId = request.AvatarId;
+        profile.BackgroundId = request.BackgroundId;
         profile.Revision++;
         profile.UpdatedAt = timeProvider.GetUtcNow();
         try
@@ -63,6 +66,57 @@ public sealed class PlayerService(
         return ToResponse(profile);
     }
 
+    public async Task<PlayerResponse> GrantAvatarAsync(
+        Guid userId,
+        int avatarId,
+        CancellationToken cancellationToken)
+    {
+        if (avatarId < 0)
+        {
+            throw new PlayerValidationException(new Dictionary<string, string[]>
+            {
+                ["avatarId"] = ["AvatarId cannot be negative."]
+            });
+        }
+
+        await EnsureAvatarAvailableAsync(avatarId, cancellationToken);
+        var profile = await GetRequiredAsync(userId, cancellationToken);
+        if (profile.OwnedAvatarIds.Contains(avatarId))
+        {
+            return ToResponse(profile);
+        }
+
+        profile.OwnedAvatarIds = profile.OwnedAvatarIds.Append(avatarId).OrderBy(value => value).ToList();
+        profile.Revision++;
+        profile.UpdatedAt = timeProvider.GetUtcNow();
+        try
+        {
+            await repository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Changed();
+        }
+
+        logger.LogInformation(
+            "Granted avatar {AvatarId} to player {UserId} at revision {Revision}.",
+            avatarId,
+            userId,
+            profile.Revision);
+        return ToResponse(profile);
+    }
+
+    private async Task EnsureAvatarAvailableAsync(int avatarId, CancellationToken cancellationToken)
+    {
+        if (!await gameConfigService.IsAvatarAvailableAsync(avatarId, cancellationToken))
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "AVATAR_NOT_AVAILABLE",
+                "Avatar does not exist or is not enabled in the published game configuration.");
+        }
+    }
+
     private async Task<PlayerProfile> GetRequiredAsync(Guid userId, CancellationToken cancellationToken) =>
         await repository.GetOrCreateAsync(userId, timeProvider.GetUtcNow(), cancellationToken) ??
         throw new ApiException(
@@ -74,6 +128,8 @@ public sealed class PlayerService(
         profile.UserId,
         profile.Nickname,
         profile.AvatarId,
+        profile.OwnedAvatarIds.ToArray(),
+        profile.BackgroundId,
         profile.Gold,
         profile.Revision,
         profile.CreatedAt,

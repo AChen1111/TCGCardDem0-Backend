@@ -63,6 +63,7 @@
                 <td><time datetime="@account.CreatedAt.ToString("O")">@account.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</time></td>
                 <td><time datetime="@account.UpdatedAt.ToString("O")">@account.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</time></td>
                 <td class="account-actions">
+                    <a class="button" asp-page="/Admin/Accounts/Edit" asp-route-id="@account.Id">编辑数据</a>
                     <button class="ghost-danger"
                             type="button"
                             data-delete-account
