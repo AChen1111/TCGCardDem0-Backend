@@ -98,6 +98,6 @@ public static class AuthEndpoints
         Results.ValidationProblem(
             errors,
             statusCode: StatusCodes.Status422UnprocessableEntity,
-            title: "Request validation failed.",
+            title: "账号或密码格式不正确",
             extensions: new Dictionary<string, object?> { ["code"] = "VALIDATION_ERROR" });
 }

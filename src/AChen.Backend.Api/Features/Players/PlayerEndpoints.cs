@@ -49,7 +49,7 @@ public static class PlayerEndpoints
             throw new ApiException(
                 StatusCodes.Status401Unauthorized,
                 "INVALID_ACCESS_TOKEN",
-                "Access token is no longer valid.");
+                "登录状态已失效，请重新登录");
         }
 
         return userId;

@@ -11,26 +11,26 @@ public static partial class ContentDeliveryValidation
         var errors = new Dictionary<string, string[]>();
         if (!SupportedPlatforms.Contains(request.Platform, StringComparer.Ordinal))
         {
-            errors["platform"] = ["Platform must be StandaloneWindows64, Android, or iOS."];
+            errors["platform"] = ["平台必须是 StandaloneWindows64、Android 或 iOS"];
         }
 
         if (string.IsNullOrWhiteSpace(request.AppVersion) ||
             request.AppVersion.Length > 64 ||
             !SafeVersionPattern().IsMatch(request.AppVersion))
         {
-            errors["appVersion"] = ["App version must contain 1-64 letters, numbers, dots, plus signs, or hyphens."];
+            errors["appVersion"] = ["应用版本需为 1-64 位字母、数字、点、加号或连字符"];
         }
 
         if (string.IsNullOrWhiteSpace(request.ContentVersion) ||
             request.ContentVersion.Length > 64 ||
             !SemanticVersionPattern().IsMatch(request.ContentVersion))
         {
-            errors["contentVersion"] = ["Content version must be a valid Semantic Version, for example 1.2.3 or 1.2.3-beta.1."];
+            errors["contentVersion"] = ["内容版本必须是有效的语义化版本，例如 1.2.3 或 1.2.3-beta.1"];
         }
 
         if (request.Notes?.Length > 2_000)
         {
-            errors["notes"] = ["Notes must contain at most 2000 characters."];
+            errors["notes"] = ["备注不能超过 2000 个字符"];
         }
 
         return errors;

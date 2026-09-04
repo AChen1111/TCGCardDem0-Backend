@@ -6,8 +6,8 @@ public static class GameConfigValidation
     {
         var errors = new Dictionary<string, string[]>();
         ValidateId(input.Id, errors);
-        ValidateText(input.Name, 64, "name", "Name", errors);
-        ValidateText(input.ResourceKey, 128, "resourceKey", "ResourceKey", errors);
+        ValidateText(input.Name, 64, "name", "名称", errors);
+        ValidateText(input.ResourceKey, 128, "resourceKey", "资源键", errors);
         ValidateExpectedEditRevision(input.ExpectedEditRevision, errors);
         return errors;
     }
@@ -16,16 +16,16 @@ public static class GameConfigValidation
     {
         var errors = new Dictionary<string, string[]>();
         ValidateId(input.Id, errors);
-        ValidateText(input.Title, 64, "title", "Title", errors);
-        ValidateText(input.CoverResourceKey, 128, "coverResourceKey", "CoverResourceKey", errors);
+        ValidateText(input.Title, 64, "title", "标题", errors);
+        ValidateText(input.CoverResourceKey, 128, "coverResourceKey", "封面资源键", errors);
         if (input.PriceGold < 0)
         {
-            errors["priceGold"] = ["PriceGold cannot be negative."];
+            errors["priceGold"] = ["金币价格不能为负数"];
         }
 
         if (input.StartsAt is not null && input.EndsAt is not null && input.EndsAt <= input.StartsAt)
         {
-            errors["endsAt"] = ["EndsAt must be later than StartsAt."];
+            errors["endsAt"] = ["结束时间必须晚于开始时间"];
         }
 
         ValidateExpectedEditRevision(input.ExpectedEditRevision, errors);
@@ -36,7 +36,7 @@ public static class GameConfigValidation
     {
         if (id <= 0)
         {
-            errors["id"] = ["Id must be greater than zero."];
+            errors["id"] = ["ID 必须大于 0"];
         }
     }
 
@@ -50,7 +50,7 @@ public static class GameConfigValidation
         var normalized = value?.Trim() ?? "";
         if (normalized.Length is 0 || normalized.Length > maxLength || normalized.Any(char.IsControl))
         {
-            errors[field] = [$"{label} must contain 1-{maxLength} characters and cannot contain control characters."];
+            errors[field] = [$"{label}需为 1-{maxLength} 个字符且不能包含控制字符"];
         }
     }
 
@@ -60,7 +60,7 @@ public static class GameConfigValidation
     {
         if (expectedEditRevision < 0)
         {
-            errors["expectedEditRevision"] = ["ExpectedEditRevision cannot be negative."];
+            errors["expectedEditRevision"] = ["预期编辑版本号不能为负数"];
         }
     }
 }

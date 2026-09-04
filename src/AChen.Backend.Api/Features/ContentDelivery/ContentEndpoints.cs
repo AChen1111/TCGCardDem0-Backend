@@ -64,7 +64,7 @@ public static class ContentEndpoints
         {
             throw new ContentValidationException(new Dictionary<string, string[]>
             {
-                ["Content-Type"] = ["Content-Type must be application/zip."]
+                ["Content-Type"] = ["Content-Type 必须为 application/zip"]
             });
         }
 
@@ -126,7 +126,7 @@ public static class ContentEndpoints
             throw new ContentDeliveryException(
                 StatusCodes.Status404NotFound,
                 "ACTIVE_CONTENT_RELEASE_NOT_FOUND",
-                "No active content release exists for this channel, platform, and app version.");
+                "当前渠道、平台和应用版本没有可用的内容版本");
         }
 
         return Results.Ok(active);

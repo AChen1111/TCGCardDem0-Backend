@@ -77,7 +77,7 @@ public sealed class RegisterModel(AuthService authService) : PageModel
     private static string TranslateValidationMessage(string field, string fallback) => field switch
     {
         "username" => "用户名需为 3–24 位，只能包含英文字母、数字或下划线。",
-        "password" when fallback == "Password is too weak." => "密码过弱。",
+        "password" when fallback == "密码过弱" => "密码过弱。",
         "password" => "密码长度需为 8–128 位。",
         _ => fallback
     };

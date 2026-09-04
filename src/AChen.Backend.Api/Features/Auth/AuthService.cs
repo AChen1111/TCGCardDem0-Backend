@@ -42,7 +42,7 @@ public sealed class AuthService(
             cancellationToken);
         if (accountExists)
         {
-            throw new ApiException(StatusCodes.Status409Conflict, "ACCOUNT_EXISTS", "Username is already registered.");
+            throw new ApiException(StatusCodes.Status409Conflict, "ACCOUNT_EXISTS", "该账号已被注册");
         }
 
         var now = timeProvider.GetUtcNow();
@@ -70,7 +70,7 @@ public sealed class AuthService(
         }
         catch (DbUpdateException exception) when (exception.InnerException is SqliteException { SqliteErrorCode: 19 })
         {
-            throw new ApiException(StatusCodes.Status409Conflict, "ACCOUNT_EXISTS", "Username is already registered.");
+            throw new ApiException(StatusCodes.Status409Conflict, "ACCOUNT_EXISTS", "该账号已被注册");
         }
     }
 
@@ -84,13 +84,13 @@ public sealed class AuthService(
 
         if (user is null)
         {
-            throw new ApiException(StatusCodes.Status401Unauthorized, "INVALID_CREDENTIALS", "Username or password is incorrect.");
+            throw new ApiException(StatusCodes.Status401Unauthorized, "INVALID_CREDENTIALS", "账号或密码错误");
         }
 
         var verification = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (verification == PasswordVerificationResult.Failed)
         {
-            throw new ApiException(StatusCodes.Status401Unauthorized, "INVALID_CREDENTIALS", "Username or password is incorrect.");
+            throw new ApiException(StatusCodes.Status401Unauthorized, "INVALID_CREDENTIALS", "账号或密码错误");
         }
 
         if (verification == PasswordVerificationResult.SuccessRehashNeeded)
@@ -151,7 +151,7 @@ public sealed class AuthService(
         var user = await db.Users.AsNoTracking().SingleOrDefaultAsync(value => value.Id == userId, cancellationToken);
         if (user is null)
         {
-            throw new ApiException(StatusCodes.Status401Unauthorized, "INVALID_ACCESS_TOKEN", "Access token is no longer valid.");
+            throw new ApiException(StatusCodes.Status401Unauthorized, "INVALID_ACCESS_TOKEN", "登录状态已失效");
         }
 
         return ToUserResponse(user);
@@ -171,5 +171,5 @@ public sealed class AuthService(
         new(user.Id, user.Username, user.CreatedAt);
 
     private static ApiException InvalidRefreshToken() =>
-        new(StatusCodes.Status401Unauthorized, "INVALID_REFRESH_TOKEN", "Refresh token is invalid or expired.");
+        new(StatusCodes.Status401Unauthorized, "INVALID_REFRESH_TOKEN", "登录状态已失效，请重新登录");
 }

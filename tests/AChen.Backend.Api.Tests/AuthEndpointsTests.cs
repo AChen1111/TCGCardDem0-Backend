@@ -46,7 +46,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         var duplicateUsername = await RegisterAsync("duplicateone");
 
         Assert.Equal(HttpStatusCode.Conflict, duplicateUsername.StatusCode);
-        await AssertErrorCodeAsync(duplicateUsername, "ACCOUNT_EXISTS");
+        await AssertErrorAsync(duplicateUsername, "ACCOUNT_EXISTS", "该账号已被注册");
     }
 
     [Fact]
@@ -61,6 +61,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
         using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var errors = problem.RootElement.GetProperty("errors");
+        Assert.Equal("账号或密码格式不正确", problem.RootElement.GetProperty("title").GetString());
         Assert.True(errors.TryGetProperty("username", out _));
         Assert.True(errors.TryGetProperty("password", out _));
     }
@@ -76,7 +77,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
 
         Assert.Equal(HttpStatusCode.OK, byUsername.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, wrongPassword.StatusCode);
-        await AssertErrorCodeAsync(wrongPassword, "INVALID_CREDENTIALS");
+        await AssertErrorAsync(wrongPassword, "INVALID_CREDENTIALS", "账号或密码错误");
     }
 
     [Fact]
@@ -137,6 +138,16 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
     {
         using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal(expectedCode, problem.RootElement.GetProperty("code").GetString());
+    }
+
+    private static async Task AssertErrorAsync(
+        HttpResponseMessage response,
+        string expectedCode,
+        string expectedTitle)
+    {
+        using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(expectedCode, problem.RootElement.GetProperty("code").GetString());
+        Assert.Equal(expectedTitle, problem.RootElement.GetProperty("title").GetString());
     }
 
     private sealed record AuthPayload(

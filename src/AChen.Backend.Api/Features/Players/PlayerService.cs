@@ -41,7 +41,7 @@ public sealed class PlayerService(
                 throw new ApiException(
                     StatusCodes.Status422UnprocessableEntity,
                     "AVATAR_NOT_OWNED",
-                    "Avatar is not in the player's owned avatar list.");
+                    "尚未拥有该头像");
             }
         }
 
@@ -75,7 +75,7 @@ public sealed class PlayerService(
         {
             throw new PlayerValidationException(new Dictionary<string, string[]>
             {
-                ["avatarId"] = ["AvatarId cannot be negative."]
+                ["avatarId"] = ["头像 ID 不能为负数"]
             });
         }
 
@@ -113,7 +113,7 @@ public sealed class PlayerService(
             throw new ApiException(
                 StatusCodes.Status422UnprocessableEntity,
                 "AVATAR_NOT_AVAILABLE",
-                "Avatar does not exist or is not enabled in the published game configuration.");
+                "该头像不存在或尚未启用");
         }
     }
 
@@ -122,7 +122,7 @@ public sealed class PlayerService(
         throw new ApiException(
             StatusCodes.Status401Unauthorized,
             "INVALID_ACCESS_TOKEN",
-            "Access token is no longer valid.");
+            "登录状态已失效，请重新登录");
 
     private static PlayerResponse ToResponse(PlayerProfile profile) => new(
         profile.UserId,
@@ -136,14 +136,14 @@ public sealed class PlayerService(
         profile.UpdatedAt);
 
     private static ApiException Changed() =>
-        new(StatusCodes.Status409Conflict, "PLAYER_DATA_CHANGED", "Player data changed. Refresh and try again.");
+        new(StatusCodes.Status409Conflict, "PLAYER_DATA_CHANGED", "玩家数据已发生变化，请刷新后重试");
 }
 
 public sealed class PlayerValidationException(Dictionary<string, string[]> errors)
     : ApiException(
         StatusCodes.Status422UnprocessableEntity,
         "VALIDATION_ERROR",
-        "Request validation failed."), IApiValidationException
+        "玩家资料格式不正确"), IApiValidationException
 {
     public IReadOnlyDictionary<string, string[]> Errors { get; } = errors;
 }

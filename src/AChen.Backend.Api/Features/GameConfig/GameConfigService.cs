@@ -14,7 +14,7 @@ public sealed class GameConfigService(
             throw new ApiException(
                 StatusCodes.Status404NotFound,
                 "GAME_CONFIG_NOT_PUBLISHED",
-                "Game configuration has not been published.");
+                "游戏配置尚未发布");
         return ToBootstrapResponse(published);
     }
 
@@ -87,7 +87,7 @@ public sealed class GameConfigService(
         {
             throw new GameConfigValidationException(new Dictionary<string, string[]>
             {
-                ["resourceKey"] = ["ResourceKey must be unique within the draft."]
+                ["resourceKey"] = ["草稿中的资源键不能重复"]
             });
         }
 
@@ -123,13 +123,13 @@ public sealed class GameConfigService(
     {
         var draft = await GetMatchingDraftAsync(expectedEditRevision, cancellationToken);
         var avatar = draft.Avatars.SingleOrDefault(value => value.Id == id) ??
-            throw new ApiException(StatusCodes.Status404NotFound, "AVATAR_NOT_FOUND", "Avatar was not found.");
+            throw new ApiException(StatusCodes.Status404NotFound, "AVATAR_NOT_FOUND", "未找到该头像");
         if (await repository.WasAvatarPublishedAsync(id, cancellationToken))
         {
             throw new ApiException(
                 StatusCodes.Status422UnprocessableEntity,
                 "PUBLISHED_CONFIG_ITEM_CANNOT_BE_DELETED",
-                "Published avatars must be disabled instead of deleted.");
+                "已发布的头像不能删除，请改为停用");
         }
 
         repository.RemoveAvatar(avatar);
@@ -179,13 +179,13 @@ public sealed class GameConfigService(
     {
         var draft = await GetMatchingDraftAsync(expectedEditRevision, cancellationToken);
         var cardPack = draft.CardPacks.SingleOrDefault(value => value.Id == id) ??
-            throw new ApiException(StatusCodes.Status404NotFound, "CARD_PACK_NOT_FOUND", "Card pack was not found.");
+            throw new ApiException(StatusCodes.Status404NotFound, "CARD_PACK_NOT_FOUND", "未找到该卡包");
         if (await repository.WasCardPackPublishedAsync(id, cancellationToken))
         {
             throw new ApiException(
                 StatusCodes.Status422UnprocessableEntity,
                 "PUBLISHED_CONFIG_ITEM_CANNOT_BE_DELETED",
-                "Published card packs must be disabled instead of deleted.");
+                "已发布的卡包不能删除，请改为停用");
         }
 
         repository.RemoveCardPack(cardPack);
@@ -243,7 +243,7 @@ public sealed class GameConfigService(
             throw new ApiException(
                 StatusCodes.Status409Conflict,
                 "GAME_CONFIG_CHANGED",
-                "Game configuration changed. Refresh and try again.");
+                "游戏配置已发生变化，请刷新后重试");
         }
     }
 
@@ -363,7 +363,7 @@ public sealed class GameConfigService(
         {
             throw new GameConfigValidationException(new Dictionary<string, string[]>
             {
-                ["file"] = ["A configuration snapshot cannot contain more than 10000 items."]
+                ["file"] = ["配置快照不能包含超过 10000 个项目"]
             });
         }
 
@@ -371,7 +371,7 @@ public sealed class GameConfigService(
         {
             throw new GameConfigValidationException(new Dictionary<string, string[]>
             {
-                ["avatars"] = ["Avatar IDs must be unique."]
+                ["avatars"] = ["头像 ID 不能重复"]
             });
         }
 
@@ -379,7 +379,7 @@ public sealed class GameConfigService(
         {
             throw new GameConfigValidationException(new Dictionary<string, string[]>
             {
-                ["cardPacks"] = ["Card pack IDs must be unique."]
+                ["cardPacks"] = ["卡包 ID 不能重复"]
             });
         }
 
@@ -389,7 +389,7 @@ public sealed class GameConfigService(
         {
             throw new GameConfigValidationException(new Dictionary<string, string[]>
             {
-                ["avatars"] = ["Avatar resource keys must be unique."]
+                ["avatars"] = ["头像资源键不能重复"]
             });
         }
 
@@ -503,14 +503,14 @@ public sealed class GameConfigService(
     private static ApiException Changed() => new(
         StatusCodes.Status409Conflict,
         "GAME_CONFIG_CHANGED",
-        "Game configuration changed. Refresh and try again.");
+        "游戏配置已发生变化，请刷新后重试");
 }
 
 public sealed class GameConfigValidationException(Dictionary<string, string[]> errors)
     : ApiException(
         StatusCodes.Status422UnprocessableEntity,
         "VALIDATION_ERROR",
-        "Request validation failed."), IApiValidationException
+        "游戏配置格式不正确"), IApiValidationException
 {
     public IReadOnlyDictionary<string, string[]> Errors { get; } = errors;
 }

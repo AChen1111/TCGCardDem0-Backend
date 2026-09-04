@@ -47,7 +47,7 @@ public sealed class PublishKeyAuthenticationHandler(
         var values = Request.Headers[ContentPublisherAuthentication.HeaderName];
         if (values.Count != 1 || !credentials.Validate(values[0]))
         {
-            return Task.FromResult(AuthenticateResult.Fail("A valid content publish key is required."));
+            return Task.FromResult(AuthenticateResult.Fail("需要有效的内容发布密钥"));
         }
 
         var claims = new[]
@@ -69,7 +69,7 @@ public sealed class PublishKeyAuthenticationHandler(
         Response.ContentType = "application/problem+json";
         await Response.WriteAsJsonAsync(new
         {
-            title = "A valid content publish key is required.",
+            title = "内容发布密钥无效",
             status = StatusCodes.Status401Unauthorized,
             code = "INVALID_CONTENT_PUBLISH_KEY",
             traceId = Context.TraceIdentifier

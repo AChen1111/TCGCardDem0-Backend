@@ -11,16 +11,16 @@ public static partial class AuthValidation
 
         if (!UsernamePattern().IsMatch(username))
         {
-            errors["username"] = ["Username must contain 3-24 letters, numbers, or underscores."];
+            errors["username"] = ["用户名需为 3-24 位英文、数字或下划线"];
         }
 
         if (request.Password is null || request.Password.Length is < 8 or > 128)
         {
-            errors["password"] = ["Password must contain 8-128 characters."];
+            errors["password"] = ["密码长度需为 8-128 位"];
         }
         else if (IsWeakPassword(request.Password))
         {
-            errors["password"] = ["Password is too weak."];
+            errors["password"] = ["密码过弱"];
         }
 
         return errors;
@@ -33,12 +33,12 @@ public static partial class AuthValidation
 
         if (!UsernamePattern().IsMatch(username))
         {
-            errors["username"] = ["Username must contain 3-24 letters, numbers, or underscores."];
+            errors["username"] = ["用户名需为 3-24 位英文、数字或下划线"];
         }
 
         if (request.Password is null || request.Password.Length is < 8 or > 128)
         {
-            errors["password"] = ["Password must contain 8-128 characters."];
+            errors["password"] = ["密码长度需为 8-128 位"];
         }
 
         return errors;
@@ -50,7 +50,7 @@ public static partial class AuthValidation
         {
             return new Dictionary<string, string[]>
             {
-                ["refreshToken"] = ["Refresh token is required and must contain at most 512 characters."]
+                ["refreshToken"] = ["刷新令牌不能为空且长度不能超过 512 个字符"]
             };
         }
 
