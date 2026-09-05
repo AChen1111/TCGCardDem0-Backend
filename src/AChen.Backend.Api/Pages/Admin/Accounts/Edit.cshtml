@@ -1,0 +1,63 @@
+@page "/admin/accounts/{id:guid}/edit"
+@model AChen.Backend.Api.Pages.Admin.Accounts.EditModel
+@{
+    ViewData["Title"] = $"编辑 {Model.Account.Username}";
+}
+
+<div class="page-heading compact">
+    <div>
+        <p class="eyebrow">PLAYER DATA</p>
+        <h1>编辑玩家数据</h1>
+        <p class="muted">账号 <strong>@Model.Account.Username</strong> · @Model.Account.Id</p>
+    </div>
+    <a class="button" asp-page="/Admin/Accounts/Index">返回账号列表</a>
+</div>
+
+<div class="player-edit-layout">
+    <form class="form-card player-data-form" method="post">
+        <div asp-validation-summary="ModelOnly" class="validation"></div>
+
+        <label asp-for="Input.Nickname">昵称
+            <input asp-for="Input.Nickname" maxlength="24" autocomplete="off" />
+            <span asp-validation-for="Input.Nickname" class="field-error"></span>
+        </label>
+
+        <div class="player-fields-row">
+            <label asp-for="Input.AvatarId">当前头像 ID
+                <input asp-for="Input.AvatarId" type="number" min="0" placeholder="留空表示无头像" />
+                <span asp-validation-for="Input.AvatarId" class="field-error"></span>
+            </label>
+            <label asp-for="Input.BackgroundId">背景 ID
+                <input asp-for="Input.BackgroundId" type="number" min="1" placeholder="留空表示无背景" />
+                <span asp-validation-for="Input.BackgroundId" class="field-error"></span>
+            </label>
+        </div>
+
+        <label asp-for="Input.OwnedAvatarIds">已拥有头像 ID
+            <textarea asp-for="Input.OwnedAvatarIds" rows="4" placeholder="例如：0, 1, 2"></textarea>
+            <small class="form-hint">使用逗号、空格或换行分隔。当前头像必须包含在这个列表中。</small>
+            <span asp-validation-for="Input.OwnedAvatarIds" class="field-error"></span>
+        </label>
+
+        <label asp-for="Input.Gold">金币
+            <input asp-for="Input.Gold" type="number" min="0" />
+            <span asp-validation-for="Input.Gold" class="field-error"></span>
+        </label>
+
+        <div class="form-actions">
+            <button class="primary" type="submit">保存全部玩家数据</button>
+            <a class="button" asp-page="/Admin/Accounts/Index">取消</a>
+        </div>
+    </form>
+
+    <aside class="player-system-card">
+        <p class="eyebrow">SYSTEM FIELDS</p>
+        <h2>系统维护字段</h2>
+        <dl>
+            <div><dt>Revision</dt><dd>@Model.Account.Revision</dd></div>
+            <div><dt>创建时间</dt><dd>@Model.Account.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</dd></div>
+            <div><dt>更新时间</dt><dd>@Model.Account.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</dd></div>
+        </dl>
+        <p class="muted">保存后 Revision 自动增加，更新时间由服务器生成。</p>
+    </aside>
+</div>

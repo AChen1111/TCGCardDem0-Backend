@@ -37,7 +37,7 @@
                 <div class="success-mark" aria-hidden="true"><span></span></div>
                 <p class="account-eyebrow">ACCOUNT READY</p>
                 <h2 id="register-title">账号创建完成</h2>
-                <p><strong>@Model.RegisteredUsername</strong> 已经可以使用。现在请返回游戏客户端，用用户名或邮箱登录。</p>
+                <p><strong>@Model.RegisteredUsername</strong> 已经可以使用。现在请返回游戏客户端，用用户名登录。</p>
                 <div class="success-details">
                     <span>下一步</span>
                     <strong>打开游戏并登录</strong>
@@ -50,7 +50,7 @@
             <header class="register-heading">
                 <p class="account-eyebrow">NEW PLAYER</p>
                 <h2 id="register-title">创建玩家账号</h2>
-                <p>填写四项信息，大约一分钟即可完成。</p>
+                <p>输入账号和两次密码即可完成。</p>
             </header>
 
             <form method="post" class="register-form" data-register-form>
@@ -72,23 +72,6 @@
                     </div>
                     <small id="username-help" class="field-help">3–24 位英文字母、数字或下划线</small>
                     <span asp-validation-for="Input.Username" id="username-error" class="field-error"></span>
-                </div>
-
-                <div class="field-group">
-                    <label asp-for="Input.Email">邮箱</label>
-                    <div class="input-frame">
-                        <input asp-for="Input.Email"
-                               type="email"
-                               autocomplete="email"
-                               autocapitalize="none"
-                               spellcheck="false"
-                               maxlength="254"
-                               placeholder="name@example.com"
-                               aria-describedby="email-help email-error" />
-                        <span class="input-tag" aria-hidden="true">@@</span>
-                    </div>
-                    <small id="email-help" class="field-help">用于登录及后续账号找回</small>
-                    <span asp-validation-for="Input.Email" id="email-error" class="field-error"></span>
                 </div>
 
                 <div class="field-group">

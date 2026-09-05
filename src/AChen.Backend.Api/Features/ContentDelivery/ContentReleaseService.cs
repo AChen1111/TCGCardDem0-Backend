@@ -39,7 +39,7 @@ public sealed class ContentReleaseService(
             cancellationToken);
         if (duplicate is not null)
         {
-            throw Conflict("CONTENT_RELEASE_EXISTS", "A release with the same platform and versions already exists.");
+            throw Conflict("CONTENT_RELEASE_EXISTS", "相同平台和版本的内容发布已存在");
         }
 
         var now = timeProvider.GetUtcNow();
@@ -59,7 +59,7 @@ public sealed class ContentReleaseService(
         }
         catch (DbUpdateException exception) when (exception.InnerException is SqliteException { SqliteErrorCode: 19 })
         {
-            throw Conflict("CONTENT_RELEASE_EXISTS", "A release with the same platform and versions already exists.");
+            throw Conflict("CONTENT_RELEASE_EXISTS", "相同平台和版本的内容发布已存在");
         }
 
         logger.LogInformation(
@@ -82,7 +82,7 @@ public sealed class ContentReleaseService(
         {
             throw new ContentValidationException(new Dictionary<string, string[]>
             {
-                ["X-Artifact-Sha256"] = ["X-Artifact-Sha256 must contain a 64-character SHA-256 value."]
+                ["X-Artifact-Sha256"] = ["X-Artifact-Sha256 必须是 64 位 SHA-256 值"]
             });
         }
 
@@ -98,7 +98,7 @@ public sealed class ContentReleaseService(
 
             throw Conflict(
                 "RELEASE_ARTIFACT_CONFLICT",
-                "This release is already ready with a different archive.");
+                "该内容版本已使用其他归档文件完成发布");
         }
 
         try
@@ -185,7 +185,7 @@ public sealed class ContentReleaseService(
             {
                 throw new ContentValidationException(new Dictionary<string, string[]>
                 {
-                    ["state"] = ["State must be AwaitingUpload, Ready, or Failed."]
+                    ["state"] = ["状态必须是 AwaitingUpload、Ready 或 Failed"]
                 });
             }
 
@@ -196,7 +196,7 @@ public sealed class ContentReleaseService(
         {
             throw new ContentValidationException(new Dictionary<string, string[]>
             {
-                ["platform"] = ["Platform must be StandaloneWindows64, Android, or iOS."]
+                ["platform"] = ["平台必须是 StandaloneWindows64、Android 或 iOS"]
             });
         }
 
@@ -221,7 +221,7 @@ public sealed class ContentReleaseService(
         var release = await GetRequiredAsync(releaseId, includeFiles: false, cancellationToken);
         if (release.State == ContentReleaseState.Ready)
         {
-            throw Conflict("CONTENT_RELEASE_IMMUTABLE", "Ready releases are permanent and cannot be deleted.");
+            throw Conflict("CONTENT_RELEASE_IMMUTABLE", "已就绪的内容版本不能删除");
         }
 
         await storage.DeleteStagingAsync(release.Id, cancellationToken);
@@ -243,7 +243,7 @@ public sealed class ContentReleaseService(
         var release = await GetRequiredAsync(request.ReleaseId, includeFiles: false, cancellationToken);
         if (release.State != ContentReleaseState.Ready)
         {
-            throw Conflict("CONTENT_RELEASE_NOT_READY", "Only ready releases can be made active.");
+            throw Conflict("CONTENT_RELEASE_NOT_READY", "只有已就绪的内容版本才能设为活动版本");
         }
 
         if (!string.Equals(release.Platform, platform, StringComparison.Ordinal) ||
@@ -251,7 +251,7 @@ public sealed class ContentReleaseService(
         {
             throw Conflict(
                 "CONTENT_RELEASE_TARGET_MISMATCH",
-                "The release platform and app version must match the active target.");
+                "内容版本的平台和应用版本必须与活动目标一致");
         }
 
         var now = timeProvider.GetUtcNow();
@@ -304,14 +304,14 @@ public sealed class ContentReleaseService(
             includeRelease: true,
             cancellationToken) ?? throw NotFound(
                 "CONTENT_RELEASE_NOT_FOUND",
-                "No active content release exists for this channel, platform, and app version.");
+                "当前渠道、平台和应用版本没有可用的内容版本");
         var release = active.Release;
         if (release.State != ContentReleaseState.Ready ||
             release.HotUpdatePath is null ||
             release.CatalogPath is null ||
             release.CatalogHashPath is null)
         {
-            throw NotFound("CONTENT_RELEASE_NOT_FOUND", "The active content release is not available.");
+            throw NotFound("CONTENT_RELEASE_NOT_FOUND", "活动内容版本不可用");
         }
 
         var hotUpdate = release.Files.Single(value => value.RelativePath == release.HotUpdatePath);
@@ -376,11 +376,11 @@ public sealed class ContentReleaseService(
         var file = await repository.GetFileAsync(releaseId, normalized, cancellationToken);
         if (file is null || file.Release.State != ContentReleaseState.Ready)
         {
-            throw NotFound("CONTENT_FILE_NOT_FOUND", "The requested content file does not exist.");
+            throw NotFound("CONTENT_FILE_NOT_FOUND", "请求的内容文件不存在");
         }
 
         var stored = await storage.OpenReadAsync(releaseId, normalized, cancellationToken) ??
-            throw NotFound("CONTENT_FILE_NOT_FOUND", "The requested content file does not exist.");
+            throw NotFound("CONTENT_FILE_NOT_FOUND", "请求的内容文件不存在");
         return new ContentFileDownload(stored, file.Kind, file.Sha256, normalized);
     }
 
@@ -389,7 +389,7 @@ public sealed class ContentReleaseService(
         bool includeFiles,
         CancellationToken cancellationToken) =>
         await repository.GetAsync(releaseId, includeFiles, cancellationToken) ??
-        throw NotFound("CONTENT_RELEASE_NOT_FOUND", "The requested content release does not exist.");
+        throw NotFound("CONTENT_RELEASE_NOT_FOUND", "请求的内容版本不存在");
 
     private void ValidateTarget(string channel, string platform, string appVersion)
     {
@@ -397,7 +397,7 @@ public sealed class ContentReleaseService(
         {
             throw new ContentValidationException(new Dictionary<string, string[]>
             {
-                ["channel"] = ["The requested channel is not enabled."]
+                ["channel"] = ["请求的渠道尚未启用"]
             });
         }
 
@@ -405,7 +405,7 @@ public sealed class ContentReleaseService(
         {
             throw new ContentValidationException(new Dictionary<string, string[]>
             {
-                ["platform"] = ["Platform must be StandaloneWindows64, Android, or iOS."]
+                ["platform"] = ["平台必须是 StandaloneWindows64、Android 或 iOS"]
             });
         }
 
@@ -413,7 +413,7 @@ public sealed class ContentReleaseService(
         {
             throw new ContentValidationException(new Dictionary<string, string[]>
             {
-                ["appVersion"] = ["App version is required and must contain at most 64 characters."]
+                ["appVersion"] = ["应用版本不能为空且不能超过 64 个字符"]
             });
         }
     }
@@ -424,7 +424,7 @@ public sealed class ContentReleaseService(
         {
             throw new ContentValidationException(new Dictionary<string, string[]>
             {
-                ["pagination"] = ["Page must be at least 1 and pageSize must be between 1 and 100."]
+                ["pagination"] = ["页码必须大于等于 1，且每页数量必须在 1-100 之间"]
             });
         }
     }
@@ -475,13 +475,13 @@ public sealed class ContentReleaseService(
             path.StartsWith('/') ||
             path.Contains(':'))
         {
-            throw NotFound("CONTENT_FILE_NOT_FOUND", "The requested content file does not exist.");
+            throw NotFound("CONTENT_FILE_NOT_FOUND", "请求的内容文件不存在");
         }
 
         var segments = path.Split('/');
         if (segments.Any(value => value is "" or "." or ".."))
         {
-            throw NotFound("CONTENT_FILE_NOT_FOUND", "The requested content file does not exist.");
+            throw NotFound("CONTENT_FILE_NOT_FOUND", "请求的内容文件不存在");
         }
 
         return string.Join('/', segments);
@@ -510,7 +510,7 @@ public sealed class ContentValidationException(Dictionary<string, string[]> erro
     : ContentDeliveryException(
         StatusCodes.Status422UnprocessableEntity,
         "VALIDATION_ERROR",
-        "Request validation failed."), IApiValidationException
+        "内容发布参数格式不正确"), IApiValidationException
 {
     public IReadOnlyDictionary<string, string[]> Errors { get; } = errors;
 }

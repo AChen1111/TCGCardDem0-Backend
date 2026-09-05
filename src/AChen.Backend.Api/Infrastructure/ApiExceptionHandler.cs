@@ -25,8 +25,8 @@ public sealed class ApiExceptionHandler(
         var problemDetails = new ProblemDetails
         {
             Status = statusCode,
-            Title = knownException is null ? "An unexpected error occurred." : exception.Message,
-            Detail = knownException is null ? "The server could not complete the request." : null,
+            Title = knownException is null ? "服务器暂时无法处理请求" : exception.Message,
+            Detail = knownException is null ? "请稍后重试，如问题持续请联系管理员。" : null,
             Extensions =
             {
                 ["code"] = code,

@@ -1,8 +1,10 @@
+using System.Text.Json;
 using AChen.Backend.Api.Features.Auth;
 using AChen.Backend.Api.Features.ContentDelivery;
 using AChen.Backend.Api.Features.GameConfig;
 using AChen.Backend.Api.Features.Players;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace AChen.Backend.Api.Data;
@@ -27,11 +29,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             user.HasKey(value => value.Id);
             user.Property(value => value.Username).HasMaxLength(24).IsRequired();
             user.Property(value => value.NormalizedUsername).HasMaxLength(24).IsRequired();
-            user.Property(value => value.Email).HasMaxLength(254).IsRequired();
-            user.Property(value => value.NormalizedEmail).HasMaxLength(254).IsRequired();
             user.Property(value => value.PasswordHash).IsRequired();
             user.HasIndex(value => value.NormalizedUsername).IsUnique();
-            user.HasIndex(value => value.NormalizedEmail).IsUnique();
         });
 
         modelBuilder.Entity<RefreshSession>(session =>
@@ -50,6 +49,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             profile.HasKey(value => value.UserId);
             profile.Property(value => value.Nickname).HasMaxLength(24).IsRequired();
+            profile.Property(value => value.OwnedAvatarIds)
+                .HasConversion(
+                    value => JsonSerializer.Serialize(value, JsonSerializerOptions.Default),
+                    value => JsonSerializer.Deserialize<List<int>>(value, JsonSerializerOptions.Default) ?? new List<int>(),
+                    new ValueComparer<List<int>>(
+                        (left, right) => left != null && right != null && left.SequenceEqual(right),
+                        value => value.Aggregate(0, (hash, id) => HashCode.Combine(hash, id)),
+                        value => value.ToList()))
+                .HasColumnType("TEXT");
             profile.Property(value => value.Revision).IsConcurrencyToken();
             profile.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
             profile.Property(value => value.UpdatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();

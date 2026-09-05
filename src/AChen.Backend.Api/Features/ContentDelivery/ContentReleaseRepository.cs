@@ -109,7 +109,7 @@ public sealed class ContentReleaseRepository(AppDbContext db) : IContentReleaseR
             throw new ContentDeliveryException(
                 StatusCodes.Status409Conflict,
                 "ACTIVE_RELEASE_CHANGED",
-                "The active release changed after it was read. Refresh and try again.");
+                "活动内容版本已发生变化，请刷新后重试");
         }
 
         if (active?.ReleaseId == release.Id)

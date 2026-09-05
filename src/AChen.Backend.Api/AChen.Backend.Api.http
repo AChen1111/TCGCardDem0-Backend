@@ -47,6 +47,7 @@ Content-Type: application/json
 {
   "nickname": "Local Player",
   "avatarId": 1,
+  "backgroundId": 1,
   "expectedRevision": 0
 }
 

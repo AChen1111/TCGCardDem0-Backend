@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using AChen.Backend.Api.Data;
+using AChen.Backend.Api.Features.AccountManagement;
 using AChen.Backend.Api.Features.Auth;
 using AChen.Backend.Api.Features.ContentDelivery;
 using AChen.Backend.Api.Features.GameConfig;
@@ -20,7 +21,28 @@ var maxArchiveBytes = builder.Configuration.GetValue<long?>("ContentDelivery:Max
     ?? 2L * 1024 * 1024 * 1024;
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = maxArchiveBytes);
 
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        if (context.ProblemDetails.Extensions.ContainsKey("code"))
+        {
+            return;
+        }
+
+        context.ProblemDetails.Title = context.ProblemDetails.Status switch
+        {
+            StatusCodes.Status400BadRequest => "请求格式不正确",
+            StatusCodes.Status404NotFound => "请求的资源不存在",
+            StatusCodes.Status405MethodNotAllowed => "请求方法不受支持",
+            StatusCodes.Status413PayloadTooLarge => "请求内容过大",
+            StatusCodes.Status415UnsupportedMediaType => "请求内容类型不受支持",
+            _ => "请求处理失败"
+        };
+        context.ProblemDetails.Detail = null;
+        context.ProblemDetails.Extensions["code"] = "HTTP_ERROR";
+    };
+});
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddRazorPages();
 builder.Services.Configure<FormOptions>(options =>
@@ -57,6 +79,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<AccountManagementService>();
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<IGameConfigRepository, GameConfigRepository>();
@@ -96,7 +119,7 @@ builder.Services
                 context.Response.ContentType = "application/problem+json";
                 await context.Response.WriteAsJsonAsync(new
                 {
-                    title = "Authentication is required.",
+                    title = "登录状态已失效，请重新登录",
                     status = StatusCodes.Status401Unauthorized,
                     code = "INVALID_ACCESS_TOKEN",
                     traceId = context.HttpContext.TraceIdentifier
@@ -214,7 +237,7 @@ builder.Services.AddRateLimiter(options =>
         context.HttpContext.Response.Headers.RetryAfter = "60";
         await context.HttpContext.Response.WriteAsJsonAsync(new
         {
-            title = "Too many requests.",
+            title = "操作过于频繁，请稍后再试",
             status = StatusCodes.Status429TooManyRequests,
             code = "RATE_LIMITED",
             traceId = context.HttpContext.TraceIdentifier

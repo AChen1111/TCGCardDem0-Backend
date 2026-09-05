@@ -40,7 +40,7 @@ public sealed class LocalContentStorage : IContentStorage
     {
         if (contentLength > options.MaxArchiveBytes)
         {
-            throw Error(413, "CONTENT_ARCHIVE_TOO_LARGE", "The release archive exceeds the configured upload limit.");
+            throw Error(413, "CONTENT_ARCHIVE_TOO_LARGE", "内容归档文件超过上传大小限制");
         }
 
         var releaseStagingRoot = GetScopedPath(stagingRoot, release.Id);
@@ -188,7 +188,7 @@ public sealed class LocalContentStorage : IContentStorage
             total += read;
             if (total > options.MaxArchiveBytes)
             {
-                throw Error(413, "CONTENT_ARCHIVE_TOO_LARGE", "The release archive exceeds the configured upload limit.");
+                throw Error(413, "CONTENT_ARCHIVE_TOO_LARGE", "内容归档文件超过上传大小限制");
             }
 
             hash.AppendData(buffer, 0, read);
@@ -201,7 +201,7 @@ public sealed class LocalContentStorage : IContentStorage
                 Convert.FromHexString(actualHash),
                 Convert.FromHexString(expectedHash)))
         {
-            throw Error(422, "CONTENT_ARCHIVE_HASH_MISMATCH", "The uploaded archive does not match X-Artifact-Sha256.");
+            throw Error(422, "CONTENT_ARCHIVE_HASH_MISMATCH", "上传归档文件与 X-Artifact-Sha256 不匹配");
         }
 
         return (actualHash, total);
@@ -230,35 +230,35 @@ public sealed class LocalContentStorage : IContentStorage
 
                 if (IsSymbolicLink(entry))
                 {
-                    throw InvalidPackage("Symbolic links are not allowed in release archives.");
+                    throw InvalidPackage("内容归档文件中不允许包含符号链接");
                 }
 
                 var normalized = NormalizeRelativePath(entry.FullName);
                 if (!entries.TryAdd(normalized, entry))
                 {
-                    throw InvalidPackage($"Duplicate archive path: {normalized}");
+                    throw InvalidPackage($"内容归档文件包含重复路径：{normalized}");
                 }
 
                 expandedSize = checked(expandedSize + entry.Length);
                 if (expandedSize > options.MaxExpandedBytes)
                 {
-                    throw Error(413, "CONTENT_ARCHIVE_EXPANDED_TOO_LARGE", "The extracted release exceeds the configured limit.");
+                    throw Error(413, "CONTENT_ARCHIVE_EXPANDED_TOO_LARGE", "内容归档解压后超过大小限制");
                 }
             }
 
             if (entries.Count - (entries.ContainsKey("release-manifest.json") ? 1 : 0) > options.MaxFileCount)
             {
-                throw Error(413, "CONTENT_ARCHIVE_FILE_LIMIT", "The release archive contains too many files.");
+                throw Error(413, "CONTENT_ARCHIVE_FILE_LIMIT", "内容归档文件数量超过限制");
             }
 
             if (!entries.TryGetValue("release-manifest.json", out var manifestEntry))
             {
-                throw InvalidPackage("release-manifest.json is required at the archive root.");
+                throw InvalidPackage("归档根目录必须包含 release-manifest.json");
             }
 
             if (manifestEntry.Length is <= 0 or > MaxManifestBytes)
             {
-                throw InvalidPackage("release-manifest.json has an invalid size.");
+                throw InvalidPackage("release-manifest.json 文件大小无效");
             }
 
             ReleasePackageManifest manifest;
@@ -267,7 +267,7 @@ public sealed class LocalContentStorage : IContentStorage
                 manifest = await JsonSerializer.DeserializeAsync<ReleasePackageManifest>(
                     manifestStream,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true },
-                    cancellationToken) ?? throw InvalidPackage("release-manifest.json is invalid.");
+                    cancellationToken) ?? throw InvalidPackage("release-manifest.json 内容无效");
             }
 
             ValidateManifestIdentity(release, manifest);
@@ -279,7 +279,7 @@ public sealed class LocalContentStorage : IContentStorage
                 var entry = entries[pair.Key];
                 if (entry.Length != declaredFile.Size)
                 {
-                    throw InvalidPackage($"File size does not match the manifest: {pair.Key}");
+                    throw InvalidPackage($"文件大小与清单不一致：{pair.Key}");
                 }
 
                 var destination = ResolveWithin(extractRoot, pair.Key);
@@ -289,7 +289,7 @@ public sealed class LocalContentStorage : IContentStorage
                         Convert.FromHexString(actual),
                         Convert.FromHexString(declaredFile.Sha256)))
                 {
-                    throw InvalidPackage($"File hash does not match the manifest: {pair.Key}");
+                    throw InvalidPackage($"文件哈希与清单不一致：{pair.Key}");
                 }
 
                 validatedFiles.Add(new ValidatedContentFile(
@@ -308,17 +308,17 @@ public sealed class LocalContentStorage : IContentStorage
                 validatedFiles.Sum(value => value.Size),
                 validatedFiles);
         }
-        catch (InvalidDataException exception)
+        catch (InvalidDataException)
         {
-            throw InvalidPackage($"The release archive is not a valid ZIP file: {exception.Message}");
+            throw InvalidPackage("内容归档不是有效的 ZIP 文件");
         }
-        catch (JsonException exception)
+        catch (JsonException)
         {
-            throw InvalidPackage($"release-manifest.json is invalid: {exception.Message}");
+            throw InvalidPackage("release-manifest.json 内容无效");
         }
         catch (OverflowException)
         {
-            throw Error(413, "CONTENT_ARCHIVE_EXPANDED_TOO_LARGE", "The extracted release exceeds the configured limit.");
+            throw Error(413, "CONTENT_ARCHIVE_EXPANDED_TOO_LARGE", "内容归档解压后超过大小限制");
         }
     }
 
@@ -328,7 +328,7 @@ public sealed class LocalContentStorage : IContentStorage
     {
         if (manifest.Files is null || manifest.Files.Count == 0)
         {
-            throw InvalidPackage("The release manifest must declare at least one file.");
+            throw InvalidPackage("内容清单必须声明至少一个文件");
         }
 
         var declared = new Dictionary<string, ReleasePackageFile>(StringComparer.OrdinalIgnoreCase);
@@ -337,18 +337,18 @@ public sealed class LocalContentStorage : IContentStorage
             var normalized = NormalizeRelativePath(file.Path);
             if (normalized.Equals("release-manifest.json", StringComparison.OrdinalIgnoreCase))
             {
-                throw InvalidPackage("release-manifest.json must not declare itself.");
+                throw InvalidPackage("release-manifest.json 不能声明自身");
             }
 
             if (file.Size < 0 || !ContentDeliveryValidation.IsSha256(file.Sha256))
             {
-                throw InvalidPackage($"Invalid file metadata: {normalized}");
+                throw InvalidPackage($"文件元数据无效：{normalized}");
             }
 
             var canonical = file with { Path = normalized, Sha256 = file.Sha256.ToLowerInvariant() };
             if (!declared.TryAdd(normalized, canonical))
             {
-                throw InvalidPackage($"Duplicate manifest path: {normalized}");
+                throw InvalidPackage($"内容清单包含重复路径：{normalized}");
             }
         }
 
@@ -357,28 +357,28 @@ public sealed class LocalContentStorage : IContentStorage
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         if (!archivePaths.SetEquals(declared.Keys))
         {
-            throw InvalidPackage("The archive files do not exactly match release-manifest.json.");
+            throw InvalidPackage("归档文件与 release-manifest.json 声明不一致");
         }
 
         if (!manifest.HotUpdatePath.Equals("HybridCLR/HotUpdate.dll.bytes", StringComparison.Ordinal) ||
             !declared.ContainsKey(manifest.HotUpdatePath))
         {
-            throw InvalidPackage("HotUpdatePath must reference HybridCLR/HotUpdate.dll.bytes.");
+            throw InvalidPackage("HotUpdatePath 必须指向 HybridCLR/HotUpdate.dll.bytes");
         }
 
         if (!IsAddressablesFile(manifest.CatalogPath, ".bin") || !declared.ContainsKey(manifest.CatalogPath))
         {
-            throw InvalidPackage("CatalogPath must reference an Addressables .bin file.");
+            throw InvalidPackage("CatalogPath 必须指向 Addressables .bin 文件");
         }
 
         if (!IsAddressablesFile(manifest.CatalogHashPath, ".hash") || !declared.ContainsKey(manifest.CatalogHashPath))
         {
-            throw InvalidPackage("CatalogHashPath must reference an Addressables .hash file.");
+            throw InvalidPackage("CatalogHashPath 必须指向 Addressables .hash 文件");
         }
 
         if (!declared.Keys.Any(value => IsAddressablesFile(value, ".bundle")))
         {
-            throw InvalidPackage("At least one Addressables bundle is required.");
+            throw InvalidPackage("至少需要一个 Addressables bundle 文件");
         }
 
         return declared;
@@ -388,14 +388,14 @@ public sealed class LocalContentStorage : IContentStorage
     {
         if (manifest.SchemaVersion != 1)
         {
-            throw InvalidPackage("Only release manifest schemaVersion 1 is supported.");
+            throw InvalidPackage("目前仅支持 schemaVersion 1 的内容清单");
         }
 
         if (!string.Equals(release.Platform, manifest.Platform, StringComparison.Ordinal) ||
             !string.Equals(release.AppVersion, manifest.AppVersion, StringComparison.Ordinal) ||
             !string.Equals(release.ContentVersion, manifest.ContentVersion, StringComparison.Ordinal))
         {
-            throw InvalidPackage("The release manifest identity does not match the created release.");
+            throw InvalidPackage("内容清单标识与已创建的内容版本不一致");
         }
     }
 
@@ -430,7 +430,7 @@ public sealed class LocalContentStorage : IContentStorage
 
         if (total != entry.Length)
         {
-            throw InvalidPackage($"Extracted length mismatch: {entry.FullName}");
+            throw InvalidPackage($"解压后的文件长度不一致：{entry.FullName}");
         }
 
         await output.FlushAsync(cancellationToken);
@@ -457,18 +457,18 @@ public sealed class LocalContentStorage : IContentStorage
     {
         if (string.IsNullOrWhiteSpace(path) || path.Length > 512 || path.Contains('\\') || path.Contains('\0'))
         {
-            throw InvalidPackage("Release paths must be non-empty, forward-slash relative paths.");
+            throw InvalidPackage("内容路径不能为空，且必须是使用正斜杠的相对路径");
         }
 
         if (Path.IsPathRooted(path) || path.StartsWith('/') || path.Contains(':'))
         {
-            throw InvalidPackage($"Absolute release paths are not allowed: {path}");
+            throw InvalidPackage($"内容路径不能是绝对路径：{path}");
         }
 
         var segments = path.Split('/');
         if (segments.Any(segment => segment is "" or "." or ".."))
         {
-            throw InvalidPackage($"Invalid release path: {path}");
+            throw InvalidPackage($"内容路径无效：{path}");
         }
 
         return string.Join('/', segments);
@@ -481,7 +481,7 @@ public sealed class LocalContentStorage : IContentStorage
         var prefix = fullRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         if (!fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
         {
-            throw InvalidPackage($"Release path escapes its storage root: {relativePath}");
+            throw InvalidPackage($"内容路径超出存储根目录：{relativePath}");
         }
 
         return fullPath;

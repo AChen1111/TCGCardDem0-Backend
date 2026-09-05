@@ -28,15 +28,7 @@ public sealed class PlayerRepository(AppDbContext db) : IPlayerRepository
             return null;
         }
 
-        var profile = new PlayerProfile
-        {
-            UserId = userId,
-            Nickname = username,
-            Gold = 0,
-            Revision = 0,
-            CreatedAt = now,
-            UpdatedAt = now
-        };
+        var profile = PlayerProfile.ForNewAccount(userId, username, now);
         db.PlayerProfiles.Add(profile);
         try
         {
