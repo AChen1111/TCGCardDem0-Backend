@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using AChen.Backend.Api.Data;
 using AChen.Backend.Api.Features.GameConfig;
 using AChen.Backend.Api.Features.Players;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AChen.Backend.Api.Tests;
@@ -35,6 +37,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.Equal(0, player.AvatarId);
         Assert.Equal(new[] { 0 }, player.OwnedAvatarIds);
         Assert.Equal(1, player.BackgroundId);
+        Assert.Equal(new[] { 1 }, player.OwnedBackgroundIds);
         Assert.Equal(0, player.Gold);
         Assert.Equal(0, player.Revision);
     }
@@ -54,7 +57,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         {
             nickname = "新昵称",
             avatarId = 2002,
-            backgroundId = 3,
+            backgroundId = 1,
             expectedRevision = initial.Revision,
             gold = 999999
         });
@@ -65,7 +68,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.Equal("新昵称", updated.Nickname);
         Assert.Equal(2002, updated.AvatarId);
         Assert.Equal(new[] { 0, 2002 }, updated.OwnedAvatarIds);
-        Assert.Equal(3, updated.BackgroundId);
+        Assert.Equal(1, updated.BackgroundId);
         Assert.Equal(0, updated.Gold);
         Assert.Equal(initial.Revision + 1, updated.Revision);
     }
@@ -85,6 +88,23 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
         await AssertErrorCodeAsync(response, "AVATAR_NOT_OWNED");
+    }
+
+    [Fact]
+    public async Task Profile_update_rejects_unowned_published_wallpaper()
+    {
+        await EnsurePublishedWallpaperAsync(3);
+        using var client = await CreateAuthenticatedClientAsync("UnownedWallpaper");
+        var response = await client.PatchAsJsonAsync("/api/player/profile", new
+        {
+            nickname = "Valid Name",
+            avatarId = 0,
+            backgroundId = 3,
+            expectedRevision = 0
+        });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        await AssertErrorCodeAsync(response, "WALLPAPER_NOT_OWNED");
     }
 
     [Fact]
@@ -130,6 +150,190 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
 
         Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
         await AssertErrorCodeAsync(stale, "PLAYER_DATA_CHANGED");
+    }
+
+    [Fact]
+    public async Task Purchase_requires_access_token()
+    {
+        using var client = factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/player/purchase", new
+        {
+            catalogType = ShopCatalogTypes.Avatar,
+            itemId = 1,
+            expectedRevision = 0
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        await AssertErrorCodeAsync(response, "INVALID_ACCESS_TOKEN");
+    }
+
+    [Fact]
+    public async Task Purchase_avatar_deducts_gold_and_does_not_equip()
+    {
+        const int avatarId = 5101;
+        await EnsurePublishedAvatarAsync(avatarId, 80);
+        using var client = await CreateAuthenticatedClientAsync("BuyAvatar");
+        var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
+        await SetGoldAsync(initial.Id, 200);
+
+        var response = await client.PostAsJsonAsync("/api/player/purchase", new
+        {
+            catalogType = ShopCatalogTypes.Avatar,
+            itemId = avatarId,
+            expectedRevision = initial.Revision
+        });
+        response.EnsureSuccessStatusCode();
+        var purchased = await response.Content.ReadFromJsonAsync<PlayerPayload>();
+
+        Assert.NotNull(purchased);
+        Assert.Equal(120, purchased.Gold);
+        Assert.Equal(0, purchased.AvatarId);
+        Assert.Equal(new[] { 0, avatarId }, purchased.OwnedAvatarIds);
+        Assert.Equal(initial.Revision + 1, purchased.Revision);
+    }
+
+    [Fact]
+    public async Task Purchase_wallpaper_deducts_gold_and_does_not_equip()
+    {
+        const int wallpaperId = 7;
+        await EnsurePublishedWallpaperAsync(wallpaperId, 50);
+        using var client = await CreateAuthenticatedClientAsync("BuyWallpaper");
+        var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
+        await SetGoldAsync(initial.Id, 60);
+
+        var response = await client.PostAsJsonAsync("/api/player/purchase", new
+        {
+            catalogType = ShopCatalogTypes.Wallpaper,
+            itemId = wallpaperId,
+            expectedRevision = initial.Revision
+        });
+        response.EnsureSuccessStatusCode();
+        var purchased = await response.Content.ReadFromJsonAsync<PlayerPayload>();
+
+        Assert.NotNull(purchased);
+        Assert.Equal(10, purchased.Gold);
+        Assert.Equal(1, purchased.BackgroundId);
+        Assert.Equal(new[] { 1, wallpaperId }, purchased.OwnedBackgroundIds);
+        Assert.Equal(initial.Revision + 1, purchased.Revision);
+    }
+
+    [Fact]
+    public async Task Purchase_rejects_insufficient_gold()
+    {
+        const int avatarId = 5102;
+        await EnsurePublishedAvatarAsync(avatarId, 100);
+        using var client = await CreateAuthenticatedClientAsync("PoorBuyer");
+        var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
+
+        var response = await client.PostAsJsonAsync("/api/player/purchase", new
+        {
+            catalogType = ShopCatalogTypes.Avatar,
+            itemId = avatarId,
+            expectedRevision = initial.Revision
+        });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        await AssertErrorCodeAsync(response, "INSUFFICIENT_GOLD");
+        var current = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(current);
+        Assert.Equal(0, current.Gold);
+        Assert.Equal(new[] { 0 }, current.OwnedAvatarIds);
+    }
+
+    [Fact]
+    public async Task Purchase_rejects_already_owned_item()
+    {
+        const int avatarId = 5103;
+        await EnsurePublishedAvatarAsync(avatarId, 10);
+        using var client = await CreateAuthenticatedClientAsync("OwnBuyer");
+        var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
+        await GrantAvatarAsync(initial.Id, avatarId);
+        await SetGoldAsync(initial.Id, 100);
+        initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
+
+        var response = await client.PostAsJsonAsync("/api/player/purchase", new
+        {
+            catalogType = ShopCatalogTypes.Avatar,
+            itemId = avatarId,
+            expectedRevision = initial.Revision
+        });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        await AssertErrorCodeAsync(response, "ITEM_ALREADY_OWNED");
+        var current = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(current);
+        Assert.Equal(100, current.Gold);
+    }
+
+    [Fact]
+    public async Task Purchase_rejects_unavailable_item()
+    {
+        const int avatarId = 5104;
+        await EnsurePublishedAvatarAsync(avatarId, 10);
+        await SetAvatarEnabledAndPublishAsync(avatarId, false);
+        using var client = await CreateAuthenticatedClientAsync("ClosedShop");
+        var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
+        await SetGoldAsync(initial.Id, 100);
+
+        var response = await client.PostAsJsonAsync("/api/player/purchase", new
+        {
+            catalogType = ShopCatalogTypes.Avatar,
+            itemId = avatarId,
+            expectedRevision = initial.Revision
+        });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        await AssertErrorCodeAsync(response, "AVATAR_NOT_AVAILABLE");
+    }
+
+    [Fact]
+    public async Task Purchase_rejects_stale_revision()
+    {
+        const int avatarId = 5105;
+        await EnsurePublishedAvatarAsync(avatarId, 10);
+        using var client = await CreateAuthenticatedClientAsync("StaleBuyer");
+        var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
+        Assert.NotNull(initial);
+        await SetGoldAsync(initial.Id, 100);
+
+        var first = await client.PostAsJsonAsync("/api/player/purchase", new
+        {
+            catalogType = ShopCatalogTypes.Avatar,
+            itemId = avatarId,
+            expectedRevision = initial.Revision
+        });
+        first.EnsureSuccessStatusCode();
+
+        var stale = await client.PostAsJsonAsync("/api/player/purchase", new
+        {
+            catalogType = ShopCatalogTypes.Avatar,
+            itemId = avatarId,
+            expectedRevision = initial.Revision
+        });
+
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        await AssertErrorCodeAsync(stale, "PLAYER_DATA_CHANGED");
+    }
+
+    [Fact]
+    public async Task Purchase_rejects_unknown_catalog_type()
+    {
+        using var client = await CreateAuthenticatedClientAsync("BadCatalog");
+        var response = await client.PostAsJsonAsync("/api/player/purchase", new
+        {
+            catalogType = "cardPack",
+            itemId = 1,
+            expectedRevision = 0
+        });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        await AssertErrorCodeAsync(response, "VALIDATION_ERROR");
     }
 
     [Theory]
@@ -248,11 +452,12 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
             player.AvatarId,
             player.OwnedAvatarIds,
             player.BackgroundId,
+            player.OwnedBackgroundIds,
             player.Gold,
             player.Revision);
     }
 
-    private async Task EnsurePublishedAvatarAsync(int id)
+    private async Task EnsurePublishedAvatarAsync(int id, long priceGold = 0)
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var service = scope.ServiceProvider.GetRequiredService<GameConfigService>();
@@ -262,12 +467,34 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
                 id,
                 $"Avatar {id}",
                 $"Avatar_{id}",
+                priceGold,
                 id,
                 true,
                 admin.EditRevision),
             CancellationToken.None);
         admin = await service.GetAdminAsync(CancellationToken.None);
         await service.PublishAsync(admin.EditRevision, CancellationToken.None);
+    }
+
+    private async Task EnsurePublishedWallpaperAsync(int id, long priceGold = 0)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<GameConfigService>();
+        var admin = await service.GetAdminAsync(CancellationToken.None);
+        await service.UpsertWallpaperAsync(
+            new WallpaperDefinitionInput(id, $"Wallpaper {id}", $"Wallpaper_{id}", priceGold, id, true, admin.EditRevision),
+            CancellationToken.None);
+        admin = await service.GetAdminAsync(CancellationToken.None);
+        await service.PublishAsync(admin.EditRevision, CancellationToken.None);
+    }
+
+    private async Task SetGoldAsync(Guid userId, long gold)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var profile = await db.PlayerProfiles.SingleAsync(value => value.UserId == userId);
+        profile.Gold = gold;
+        await db.SaveChangesAsync();
     }
 
     private async Task SetAvatarEnabledAndPublishAsync(int id, bool isEnabled)
@@ -281,6 +508,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
                 avatar.Id,
                 avatar.Name,
                 avatar.ResourceKey,
+                avatar.PriceGold,
                 avatar.SortOrder,
                 isEnabled,
                 admin.EditRevision),
@@ -304,6 +532,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         int? AvatarId,
         IReadOnlyList<int> OwnedAvatarIds,
         int? BackgroundId,
+        IReadOnlyList<int> OwnedBackgroundIds,
         long Gold,
         long Revision);
 }

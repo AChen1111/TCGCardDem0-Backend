@@ -45,6 +45,18 @@ public sealed class PlayerService(
             }
         }
 
+        if (request.BackgroundId != profile.BackgroundId && request.BackgroundId is int backgroundId)
+        {
+            await EnsureWallpaperAvailableAsync(backgroundId, cancellationToken);
+            if (!profile.OwnedBackgroundIds.Contains(backgroundId))
+            {
+                throw new ApiException(
+                    StatusCodes.Status422UnprocessableEntity,
+                    "WALLPAPER_NOT_OWNED",
+                    "尚未拥有该壁纸");
+            }
+        }
+
         profile.Nickname = request.Nickname.Trim();
         profile.AvatarId = request.AvatarId;
         profile.BackgroundId = request.BackgroundId;
@@ -106,6 +118,104 @@ public sealed class PlayerService(
         return ToResponse(profile);
     }
 
+    public async Task<PlayerResponse> PurchaseShopItemAsync(
+        Guid userId,
+        PurchaseShopItemRequest request,
+        CancellationToken cancellationToken)
+    {
+        var errors = PlayerValidation.Validate(request);
+        if (errors.Count > 0)
+        {
+            throw new PlayerValidationException(errors);
+        }
+
+        var catalogType = request.CatalogType.Trim();
+        var published = await gameConfigService.GetPublishedAsync(cancellationToken);
+        var now = timeProvider.GetUtcNow();
+        long priceGold;
+        if (catalogType == ShopCatalogTypes.Avatar)
+        {
+            var avatar = published.Avatars.FirstOrDefault(value => value.Id == request.ItemId);
+            if (avatar is null || !IsOnSale(avatar.IsEnabled, avatar.StartsAt, avatar.EndsAt, now))
+            {
+                throw new ApiException(
+                    StatusCodes.Status422UnprocessableEntity,
+                    "AVATAR_NOT_AVAILABLE",
+                    "该头像不存在或尚未启用");
+            }
+
+            priceGold = avatar.PriceGold;
+        }
+        else
+        {
+            var wallpaper = published.Wallpapers.FirstOrDefault(value => value.Id == request.ItemId);
+            if (wallpaper is null || !IsOnSale(wallpaper.IsEnabled, wallpaper.StartsAt, wallpaper.EndsAt, now))
+            {
+                throw new ApiException(
+                    StatusCodes.Status422UnprocessableEntity,
+                    "WALLPAPER_NOT_AVAILABLE",
+                    "该壁纸不存在或尚未启用");
+            }
+
+            priceGold = wallpaper.PriceGold;
+        }
+
+        var profile = await GetRequiredAsync(userId, cancellationToken);
+        if (profile.Revision != request.ExpectedRevision)
+        {
+            throw Changed();
+        }
+
+        var alreadyOwned = catalogType == ShopCatalogTypes.Avatar
+            ? profile.OwnedAvatarIds.Contains(request.ItemId)
+            : profile.OwnedBackgroundIds.Contains(request.ItemId);
+        if (alreadyOwned)
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "ITEM_ALREADY_OWNED",
+                "已拥有该商品");
+        }
+
+        if (profile.Gold < priceGold)
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "INSUFFICIENT_GOLD",
+                "金币不足");
+        }
+
+        profile.Gold -= priceGold;
+        if (catalogType == ShopCatalogTypes.Avatar)
+        {
+            profile.OwnedAvatarIds = profile.OwnedAvatarIds.Append(request.ItemId).OrderBy(value => value).ToList();
+        }
+        else
+        {
+            profile.OwnedBackgroundIds = profile.OwnedBackgroundIds.Append(request.ItemId).OrderBy(value => value).ToList();
+        }
+
+        profile.Revision++;
+        profile.UpdatedAt = now;
+        try
+        {
+            await repository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Changed();
+        }
+
+        logger.LogInformation(
+            "Player {UserId} purchased {CatalogType} {ItemId} for {PriceGold} gold at revision {Revision}.",
+            userId,
+            catalogType,
+            request.ItemId,
+            priceGold,
+            profile.Revision);
+        return ToResponse(profile);
+    }
+
     private async Task EnsureAvatarAvailableAsync(int avatarId, CancellationToken cancellationToken)
     {
         if (!await gameConfigService.IsAvatarAvailableAsync(avatarId, cancellationToken))
@@ -116,6 +226,26 @@ public sealed class PlayerService(
                 "该头像不存在或尚未启用");
         }
     }
+
+    private async Task EnsureWallpaperAvailableAsync(int wallpaperId, CancellationToken cancellationToken)
+    {
+        if (!await gameConfigService.IsWallpaperAvailableAsync(wallpaperId, cancellationToken))
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "WALLPAPER_NOT_AVAILABLE",
+                "该壁纸不存在或尚未启用");
+        }
+    }
+
+    private static bool IsOnSale(
+        bool isEnabled,
+        DateTimeOffset? startsAt,
+        DateTimeOffset? endsAt,
+        DateTimeOffset now) =>
+        isEnabled &&
+        (!startsAt.HasValue || startsAt <= now) &&
+        (!endsAt.HasValue || endsAt > now);
 
     private async Task<PlayerProfile> GetRequiredAsync(Guid userId, CancellationToken cancellationToken) =>
         await repository.GetOrCreateAsync(userId, timeProvider.GetUtcNow(), cancellationToken) ??
@@ -130,6 +260,7 @@ public sealed class PlayerService(
         profile.AvatarId,
         profile.OwnedAvatarIds.ToArray(),
         profile.BackgroundId,
+        profile.OwnedBackgroundIds.ToArray(),
         profile.Gold,
         profile.Revision,
         profile.CreatedAt,

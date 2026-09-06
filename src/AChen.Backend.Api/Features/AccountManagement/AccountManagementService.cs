@@ -71,6 +71,7 @@ public sealed class AccountManagementService(
             profile.AvatarId,
             profile.OwnedAvatarIds.ToArray(),
             profile.BackgroundId,
+            profile.OwnedBackgroundIds.ToArray(),
             profile.Gold,
             profile.Revision,
             profile.CreatedAt,
@@ -99,6 +100,7 @@ public sealed class AccountManagementService(
 
         var now = timeProvider.GetUtcNow();
         var ownedAvatarIds = request.OwnedAvatarIds.Distinct().OrderBy(value => value).ToList();
+        var ownedBackgroundIds = request.OwnedBackgroundIds.Distinct().OrderBy(value => value).ToList();
         var profile = account.PlayerProfile;
         if (profile is null)
         {
@@ -109,6 +111,7 @@ public sealed class AccountManagementService(
                 AvatarId = request.AvatarId,
                 OwnedAvatarIds = ownedAvatarIds,
                 BackgroundId = request.BackgroundId,
+                OwnedBackgroundIds = ownedBackgroundIds,
                 Gold = request.Gold,
                 Revision = 1,
                 CreatedAt = now,
@@ -122,6 +125,7 @@ public sealed class AccountManagementService(
             profile.AvatarId = request.AvatarId;
             profile.OwnedAvatarIds = ownedAvatarIds;
             profile.BackgroundId = request.BackgroundId;
+            profile.OwnedBackgroundIds = ownedBackgroundIds;
             profile.Gold = request.Gold;
             profile.Revision++;
             profile.UpdatedAt = now;
@@ -193,9 +197,18 @@ public sealed class AccountManagementService(
             errors["OwnedAvatarIds"] = ["已拥有头像列表必须包含当前头像 ID。"];
         }
 
-        if (request.BackgroundId is <= 0)
+        if (request.BackgroundId is < 0)
         {
-            errors["BackgroundId"] = ["背景 ID 必须大于 0，或留空。"];
+            errors["BackgroundId"] = ["背景 ID 不能为负数，或留空。"];
+        }
+
+        if (request.OwnedBackgroundIds.Count > 256 || request.OwnedBackgroundIds.Any(value => value < 0))
+        {
+            errors["OwnedBackgroundIds"] = ["已拥有壁纸最多 256 个，且 ID 不能为负数。"];
+        }
+        else if (request.BackgroundId is int backgroundId && !request.OwnedBackgroundIds.Contains(backgroundId))
+        {
+            errors["OwnedBackgroundIds"] = ["已拥有壁纸列表必须包含当前背景 ID。"];
         }
 
         if (request.Gold < 0)

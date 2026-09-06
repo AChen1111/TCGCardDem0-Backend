@@ -12,6 +12,7 @@ public sealed class PlayerProfile
     public int? AvatarId { get; set; }
     public List<int> OwnedAvatarIds { get; set; } = [];
     public int? BackgroundId { get; set; }
+    public List<int> OwnedBackgroundIds { get; set; } = [];
     public long Gold { get; set; }
     public long Revision { get; set; }
     public DateTimeOffset CreatedAt { get; init; }
@@ -25,6 +26,7 @@ public sealed class PlayerProfile
         AvatarId = DefaultAvatarId,
         BackgroundId = DefaultBackgroundId,
         OwnedAvatarIds = [DefaultAvatarId],
+        OwnedBackgroundIds = [DefaultBackgroundId],
         Gold = 0,
         Revision = 0,
         CreatedAt = now,

@@ -33,6 +33,7 @@ public sealed class EditModel(AccountManagementService service) : PageModel
             AvatarId = account.AvatarId,
             OwnedAvatarIds = string.Join(", ", account.OwnedAvatarIds),
             BackgroundId = account.BackgroundId,
+            OwnedBackgroundIds = string.Join(", ", account.OwnedBackgroundIds),
             Gold = account.Gold
         };
         return Page();
@@ -43,6 +44,7 @@ public sealed class EditModel(AccountManagementService service) : PageModel
         CancellationToken cancellationToken = default)
     {
         var ownedAvatarIds = ParseOwnedAvatarIds(Input.OwnedAvatarIds);
+        var ownedBackgroundIds = ParseOwnedIds(Input.OwnedBackgroundIds, "OwnedBackgroundIds", "壁纸");
         if (!ModelState.IsValid)
         {
             return await ReloadPageAsync(id, cancellationToken);
@@ -55,6 +57,7 @@ public sealed class EditModel(AccountManagementService service) : PageModel
                 Input.AvatarId,
                 ownedAvatarIds,
                 Input.BackgroundId,
+                ownedBackgroundIds,
                 Input.Gold),
             cancellationToken);
         if (!result.Found)
@@ -82,7 +85,10 @@ public sealed class EditModel(AccountManagementService service) : PageModel
         return RedirectToPage(new { id });
     }
 
-    private IReadOnlyList<int> ParseOwnedAvatarIds(string? value)
+    private IReadOnlyList<int> ParseOwnedAvatarIds(string? value) =>
+        ParseOwnedIds(value, "OwnedAvatarIds", "头像");
+
+    private IReadOnlyList<int> ParseOwnedIds(string? value, string field, string label)
     {
         var parts = (value ?? "").Split(
             [',', '，', ';', '；', ' ', '\r', '\n', '\t'],
@@ -92,7 +98,7 @@ public sealed class EditModel(AccountManagementService service) : PageModel
         {
             if (!int.TryParse(part, out var avatarId))
             {
-                ModelState.AddModelError("Input.OwnedAvatarIds", $"“{part}”不是有效的头像 ID。");
+                ModelState.AddModelError($"Input.{field}", $"“{part}”不是有效的{label} ID。");
                 continue;
             }
 
@@ -121,6 +127,7 @@ public sealed class EditModel(AccountManagementService service) : PageModel
         public int? AvatarId { get; set; }
         public string OwnedAvatarIds { get; set; } = "";
         public int? BackgroundId { get; set; }
+        public string OwnedBackgroundIds { get; set; } = "";
         public long Gold { get; set; }
     }
 }

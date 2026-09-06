@@ -28,7 +28,7 @@
                 <span asp-validation-for="Input.AvatarId" class="field-error"></span>
             </label>
             <label asp-for="Input.BackgroundId">背景 ID
-                <input asp-for="Input.BackgroundId" type="number" min="1" placeholder="留空表示无背景" />
+                <input asp-for="Input.BackgroundId" type="number" min="0" placeholder="留空表示无背景" />
                 <span asp-validation-for="Input.BackgroundId" class="field-error"></span>
             </label>
         </div>
@@ -37,6 +37,12 @@
             <textarea asp-for="Input.OwnedAvatarIds" rows="4" placeholder="例如：0, 1, 2"></textarea>
             <small class="form-hint">使用逗号、空格或换行分隔。当前头像必须包含在这个列表中。</small>
             <span asp-validation-for="Input.OwnedAvatarIds" class="field-error"></span>
+        </label>
+
+        <label asp-for="Input.OwnedBackgroundIds">已拥有壁纸 ID
+            <textarea asp-for="Input.OwnedBackgroundIds" rows="4" placeholder="例如：1, 2, 3"></textarea>
+            <small class="form-hint">使用逗号、空格或换行分隔。当前背景必须包含在这个列表中。</small>
+            <span asp-validation-for="Input.OwnedBackgroundIds" class="field-error"></span>
         </label>
 
         <label asp-for="Input.Gold">金币

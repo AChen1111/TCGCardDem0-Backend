@@ -23,6 +23,7 @@ public sealed record ManagedAccountDetails(
     int? AvatarId,
     IReadOnlyList<int> OwnedAvatarIds,
     int? BackgroundId,
+    IReadOnlyList<int> OwnedBackgroundIds,
     long Gold,
     long Revision,
     DateTimeOffset CreatedAt,
@@ -33,6 +34,7 @@ public sealed record UpdateManagedPlayerData(
     int? AvatarId,
     IReadOnlyList<int> OwnedAvatarIds,
     int? BackgroundId,
+    IReadOnlyList<int> OwnedBackgroundIds,
     long Gold);
 
 public sealed record ManagedAccountUpdateResult(

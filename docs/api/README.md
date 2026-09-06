@@ -19,8 +19,9 @@
 | POST | `/api/auth/refresh` | 无 | 刷新并轮换 Token |
 | POST | `/api/auth/logout` | 无 | 吊销 Refresh Token |
 | GET | `/api/auth/me` | Bearer | 当前用户 |
-| GET | `/api/player/bootstrap` | Bearer | 当前玩家数据（含当前头像和已拥有头像列表） |
-| PATCH | `/api/player/profile` | Bearer | 更新昵称、当前头像和背景图；不能改已拥有头像列表 |
+| GET | `/api/player/bootstrap` | Bearer | 当前玩家数据（含当前头像、壁纸、金币和已拥有列表） |
+| PATCH | `/api/player/profile` | Bearer | 更新昵称、当前头像和背景图；不能改金币或已拥有列表 |
+| POST | `/api/player/purchase` | Bearer | 购买头像或壁纸；价格和扣款由服务端按已发布配置计算 |
 | GET | `/api/game-config/bootstrap` | 无 | 已发布的头像和卡包配置；支持 `If-None-Match` |
 | POST | `/api/content/releases` | Publish Key | 创建内容 Release |
 | PUT | `/api/content/releases/{id}/artifact` | Publish Key | 上传 `application/zip` 内容包 |
@@ -56,7 +57,19 @@
 }
 ```
 
-玩家数据含 `avatarId`（当前头像）和 `ownedAvatarIds`（已拥有头像 ID 列表）。注册默认昵称等于账号、`avatarId` 为 0、`backgroundId` 为 1，并拥有头像 0。`PATCH /api/player/profile` 只能装备已拥有且已发布的头像，不能改拥有列表。
+玩家数据含 `avatarId`、`ownedAvatarIds`、`backgroundId`、`ownedBackgroundIds`、`gold`。注册默认昵称等于账号、`avatarId` 为 0、`backgroundId` 为 1，并拥有头像 0 与壁纸 1，`gold` 为 0。`PATCH /api/player/profile` 只能装备已拥有且已发布的头像或壁纸，不能改金币或拥有列表。
+
+购买商品：
+
+```json
+{
+  "catalogType": "avatar",
+  "itemId": 2,
+  "expectedRevision": 0
+}
+```
+
+`catalogType` 仅支持 `avatar` 和 `wallpaper`。价格取已发布配置的 `priceGold`，请求体不能指定金额。余额不足返回 `INSUFFICIENT_GOLD`，已拥有返回 `ITEM_ALREADY_OWNED`，购买成功后只加入拥有列表，不自动装备。
 
 创建内容 Release：
 

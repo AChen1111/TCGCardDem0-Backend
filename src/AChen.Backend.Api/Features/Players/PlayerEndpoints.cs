@@ -22,6 +22,8 @@ public static class PlayerEndpoints
         group.MapGet("/bootstrap", GetPlayerAsync);
         group.MapPatch("/profile", UpdateProfileAsync)
             .WithMetadata(new RequestSizeLimitAttribute(ProfileRequestLimit));
+        group.MapPost("/purchase", PurchaseShopItemAsync)
+            .WithMetadata(new RequestSizeLimitAttribute(ProfileRequestLimit));
         return endpoints;
     }
 
@@ -37,6 +39,16 @@ public static class PlayerEndpoints
         PlayerService service,
         CancellationToken cancellationToken) =>
         Results.Ok(await service.UpdateProfileAsync(
+            GetUserId(context),
+            request,
+            cancellationToken));
+
+    private static async Task<IResult> PurchaseShopItemAsync(
+        HttpContext context,
+        PurchaseShopItemRequest request,
+        PlayerService service,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await service.PurchaseShopItemAsync(
             GetUserId(context),
             request,
             cancellationToken));

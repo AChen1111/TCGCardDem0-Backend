@@ -53,6 +53,18 @@ Content-Type: application/json
 
 ###
 
+POST {{host}}/api/player/purchase
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "catalogType": "avatar",
+  "itemId": 2,
+  "expectedRevision": 0
+}
+
+###
+
 GET {{host}}/api/game-config/bootstrap
 Accept: application/json
 

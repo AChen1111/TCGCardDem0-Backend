@@ -16,9 +16,31 @@ public static class PlayerValidation
             errors["avatarId"] = ["头像 ID 不能为负数"];
         }
 
-        if (request.BackgroundId is <= 0)
+        if (request.BackgroundId is < 0)
         {
-            errors["backgroundId"] = ["背景 ID 必须大于 0"];
+            errors["backgroundId"] = ["背景 ID 不能为负数"];
+        }
+
+        if (request.ExpectedRevision < 0)
+        {
+            errors["expectedRevision"] = ["预期版本号不能为负数"];
+        }
+
+        return errors;
+    }
+
+    public static Dictionary<string, string[]> Validate(PurchaseShopItemRequest request)
+    {
+        var errors = new Dictionary<string, string[]>();
+        var catalogType = request.CatalogType?.Trim() ?? "";
+        if (catalogType is not (ShopCatalogTypes.Avatar or ShopCatalogTypes.Wallpaper))
+        {
+            errors["catalogType"] = ["商品类型只能是 avatar 或 wallpaper"];
+        }
+
+        if (request.ItemId < 0)
+        {
+            errors["itemId"] = ["商品 ID 不能为负数"];
         }
 
         if (request.ExpectedRevision < 0)
