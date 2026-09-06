@@ -24,6 +24,11 @@ public sealed class GameConfigRepository(AppDbContext db) : IGameConfigRepositor
             avatar => avatar.Id == id && avatar.Version.State == GameConfigVersionState.Published,
             cancellationToken);
 
+    public Task<bool> WasWallpaperPublishedAsync(int id, CancellationToken cancellationToken) =>
+        db.WallpaperDefinitions.AnyAsync(
+            wallpaper => wallpaper.Id == id && wallpaper.Version.State == GameConfigVersionState.Published,
+            cancellationToken);
+
     public Task<bool> WasCardPackPublishedAsync(int id, CancellationToken cancellationToken) =>
         db.CardPackDefinitions.AnyAsync(
             cardPack => cardPack.Id == id && cardPack.Version.State == GameConfigVersionState.Published,
@@ -41,9 +46,23 @@ public sealed class GameConfigRepository(AppDbContext db) : IGameConfigRepositor
             cancellationToken);
     }
 
+    public async Task<bool> IsLatestPublishedWallpaperEnabledAsync(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var revision = await db.GameConfigVersions
+            .Where(value => value.State == GameConfigVersionState.Published)
+            .MaxAsync(value => (long?)value.Revision, cancellationToken);
+        return revision is not null && await db.WallpaperDefinitions.AnyAsync(
+            wallpaper => wallpaper.Revision == revision && wallpaper.Id == id && wallpaper.IsEnabled,
+            cancellationToken);
+    }
+
     public void AddVersion(GameConfigVersion version) => db.GameConfigVersions.Add(version);
 
     public void RemoveAvatar(AvatarDefinition avatar) => db.AvatarDefinitions.Remove(avatar);
+
+    public void RemoveWallpaper(WallpaperDefinition wallpaper) => db.WallpaperDefinitions.Remove(wallpaper);
 
     public void RemoveCardPack(CardPackDefinition cardPack) => db.CardPackDefinitions.Remove(cardPack);
 
@@ -63,7 +82,10 @@ public sealed class GameConfigRepository(AppDbContext db) : IGameConfigRepositor
     {
         IQueryable<GameConfigVersion> query = db.GameConfigVersions;
         return includeDefinitions
-            ? query.Include(value => value.Avatars).Include(value => value.CardPacks).AsSplitQuery()
+            ? query.Include(value => value.Avatars)
+                .Include(value => value.Wallpapers)
+                .Include(value => value.CardPacks)
+                .AsSplitQuery()
             : query;
     }
 }

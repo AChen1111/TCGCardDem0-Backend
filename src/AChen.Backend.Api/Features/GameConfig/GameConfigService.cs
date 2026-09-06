@@ -28,6 +28,7 @@ public sealed class GameConfigService(
             published?.Revision,
             published?.PublishedAt,
             draft.Avatars.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray(),
+            draft.Wallpapers.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray(),
             draft.CardPacks.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray());
     }
 
@@ -36,6 +37,7 @@ public sealed class GameConfigService(
         var draft = await EnsureDraftAsync(cancellationToken);
         return new GameConfigDraftData(
             draft.Avatars.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray(),
+            draft.Wallpapers.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray(),
             draft.CardPacks.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray());
     }
 
@@ -51,6 +53,7 @@ public sealed class GameConfigService(
             var published = await repository.GetLatestPublishedAsync(true, cancellationToken);
 
             var avatarTargets = imported.Avatars.ToDictionary(value => value.Id);
+            var wallpaperTargets = imported.Wallpapers.ToDictionary(value => value.Id);
             var cardPackTargets = imported.CardPacks.ToDictionary(value => value.Id);
             if (published is not null)
             {
@@ -63,9 +66,15 @@ public sealed class GameConfigService(
                 {
                     cardPackTargets.Add(cardPack.Id, ToResponse(cardPack) with { IsEnabled = false });
                 }
+
+                foreach (var wallpaper in published.Wallpapers.Where(value => !wallpaperTargets.ContainsKey(value.Id)))
+                {
+                    wallpaperTargets.Add(wallpaper.Id, ToResponse(wallpaper) with { IsEnabled = false });
+                }
             }
 
             ApplyAvatarTargets(draft, avatarTargets);
+            ApplyWallpaperTargets(draft, wallpaperTargets);
             ApplyCardPackTargets(draft, cardPackTargets);
             TouchDraft(draft);
             await SaveDraftAsync(cancellationToken);
@@ -100,6 +109,9 @@ public sealed class GameConfigService(
                 Id = input.Id,
                 Name = input.Name.Trim(),
                 ResourceKey = input.ResourceKey.Trim(),
+                PriceGold = input.PriceGold,
+                StartsAt = input.StartsAt,
+                EndsAt = input.EndsAt,
                 SortOrder = input.SortOrder,
                 IsEnabled = input.IsEnabled
             });
@@ -108,10 +120,77 @@ public sealed class GameConfigService(
         {
             avatar.Name = input.Name.Trim();
             avatar.ResourceKey = input.ResourceKey.Trim();
+            avatar.PriceGold = input.PriceGold;
+            avatar.StartsAt = input.StartsAt;
+            avatar.EndsAt = input.EndsAt;
             avatar.SortOrder = input.SortOrder;
             avatar.IsEnabled = input.IsEnabled;
         }
 
+        TouchDraft(draft);
+        await SaveDraftAsync(cancellationToken);
+    }
+
+    public async Task UpsertWallpaperAsync(WallpaperDefinitionInput input, CancellationToken cancellationToken)
+    {
+        ThrowIfInvalid(GameConfigValidation.Validate(input));
+        var draft = await GetMatchingDraftAsync(input.ExpectedEditRevision, cancellationToken);
+        var duplicateKey = draft.Wallpapers.FirstOrDefault(value =>
+            value.Id != input.Id &&
+            string.Equals(value.ResourceKey, input.ResourceKey.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (duplicateKey is not null)
+        {
+            throw new GameConfigValidationException(new Dictionary<string, string[]>
+            {
+                ["resourceKey"] = ["草稿中的壁纸资源键不能重复"]
+            });
+        }
+
+        var wallpaper = draft.Wallpapers.SingleOrDefault(value => value.Id == input.Id);
+        if (wallpaper is null)
+        {
+            draft.Wallpapers.Add(new WallpaperDefinition
+            {
+                Revision = draft.Revision,
+                Id = input.Id,
+                Name = input.Name.Trim(),
+                ResourceKey = input.ResourceKey.Trim(),
+                PriceGold = input.PriceGold,
+                StartsAt = input.StartsAt,
+                EndsAt = input.EndsAt,
+                SortOrder = input.SortOrder,
+                IsEnabled = input.IsEnabled
+            });
+        }
+        else
+        {
+            wallpaper.Name = input.Name.Trim();
+            wallpaper.ResourceKey = input.ResourceKey.Trim();
+            wallpaper.PriceGold = input.PriceGold;
+            wallpaper.StartsAt = input.StartsAt;
+            wallpaper.EndsAt = input.EndsAt;
+            wallpaper.SortOrder = input.SortOrder;
+            wallpaper.IsEnabled = input.IsEnabled;
+        }
+
+        TouchDraft(draft);
+        await SaveDraftAsync(cancellationToken);
+    }
+
+    public async Task DeleteWallpaperAsync(int id, long expectedEditRevision, CancellationToken cancellationToken)
+    {
+        var draft = await GetMatchingDraftAsync(expectedEditRevision, cancellationToken);
+        var wallpaper = draft.Wallpapers.SingleOrDefault(value => value.Id == id) ??
+            throw new ApiException(StatusCodes.Status404NotFound, "WALLPAPER_NOT_FOUND", "未找到该壁纸");
+        if (await repository.WasWallpaperPublishedAsync(id, cancellationToken))
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "PUBLISHED_CONFIG_ITEM_CANNOT_BE_DELETED",
+                "已发布的壁纸不能删除，请改为停用");
+        }
+
+        repository.RemoveWallpaper(wallpaper);
         TouchDraft(draft);
         await SaveDraftAsync(cancellationToken);
     }
@@ -219,6 +298,9 @@ public sealed class GameConfigService(
     public Task<bool> IsAvatarAvailableAsync(int id, CancellationToken cancellationToken) =>
         repository.IsLatestPublishedAvatarEnabledAsync(id, cancellationToken);
 
+    public Task<bool> IsWallpaperAvailableAsync(int id, CancellationToken cancellationToken) =>
+        repository.IsLatestPublishedWallpaperEnabledAsync(id, cancellationToken);
+
     private async Task<GameConfigVersion> EnsureDraftAsync(CancellationToken cancellationToken)
     {
         var draft = await repository.GetDraftAsync(true, cancellationToken);
@@ -301,8 +383,27 @@ public sealed class GameConfigService(
                 Id = avatar.Id,
                 Name = avatar.Name,
                 ResourceKey = avatar.ResourceKey,
+                PriceGold = avatar.PriceGold,
+                StartsAt = avatar.StartsAt,
+                EndsAt = avatar.EndsAt,
                 SortOrder = avatar.SortOrder,
                 IsEnabled = avatar.IsEnabled
+            });
+        }
+
+        foreach (var wallpaper in source.Wallpapers)
+        {
+            draft.Wallpapers.Add(new WallpaperDefinition
+            {
+                Revision = revision,
+                Id = wallpaper.Id,
+                Name = wallpaper.Name,
+                ResourceKey = wallpaper.ResourceKey,
+                PriceGold = wallpaper.PriceGold,
+                StartsAt = wallpaper.StartsAt,
+                EndsAt = wallpaper.EndsAt,
+                SortOrder = wallpaper.SortOrder,
+                IsEnabled = wallpaper.IsEnabled
             });
         }
 
@@ -326,18 +427,32 @@ public sealed class GameConfigService(
     }
 
     private static GameConfigBootstrapResponse ToBootstrapResponse(GameConfigVersion version) => new(
-        1,
+        2,
         version.Revision,
         version.PublishedAt ?? throw new InvalidOperationException("Published config is missing PublishedAt."),
         version.Avatars.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray(),
+        version.Wallpapers.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray(),
         version.CardPacks.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray());
 
     private static AvatarConfigResponse ToResponse(AvatarDefinition value) => new(
         value.Id,
         value.Name,
         value.ResourceKey,
+        value.PriceGold,
         value.SortOrder,
-        value.IsEnabled);
+        value.IsEnabled,
+        value.StartsAt,
+        value.EndsAt);
+
+    private static WallpaperConfigResponse ToResponse(WallpaperDefinition value) => new(
+        value.Id,
+        value.Name,
+        value.ResourceKey,
+        value.PriceGold,
+        value.SortOrder,
+        value.IsEnabled,
+        value.StartsAt,
+        value.EndsAt);
 
     private static CardPackConfigResponse ToResponse(CardPackDefinition value) => new(
         value.Id,
@@ -359,7 +474,7 @@ public sealed class GameConfigService(
 
     private static void ValidateDraftData(GameConfigDraftData imported)
     {
-        if (imported.Avatars.Count + imported.CardPacks.Count > 10_000)
+        if (imported.Avatars.Count + imported.Wallpapers.Count + imported.CardPacks.Count > 10_000)
         {
             throw new GameConfigValidationException(new Dictionary<string, string[]>
             {
@@ -383,6 +498,14 @@ public sealed class GameConfigService(
             });
         }
 
+        if (imported.Wallpapers.GroupBy(value => value.Id).Any(group => group.Count() > 1))
+        {
+            throw new GameConfigValidationException(new Dictionary<string, string[]>
+            {
+                ["wallpapers"] = ["壁纸 ID 不能重复"]
+            });
+        }
+
         if (imported.Avatars
             .GroupBy(value => value.ResourceKey, StringComparer.OrdinalIgnoreCase)
             .Any(group => group.Count() > 1))
@@ -393,6 +516,16 @@ public sealed class GameConfigService(
             });
         }
 
+        if (imported.Wallpapers
+            .GroupBy(value => value.ResourceKey, StringComparer.OrdinalIgnoreCase)
+            .Any(group => group.Count() > 1))
+        {
+            throw new GameConfigValidationException(new Dictionary<string, string[]>
+            {
+                ["wallpapers"] = ["壁纸资源键不能重复"]
+            });
+        }
+
         var errors = new Dictionary<string, string[]>();
         foreach (var avatar in imported.Avatars)
         {
@@ -400,11 +533,31 @@ public sealed class GameConfigService(
                          avatar.Id,
                          avatar.Name,
                          avatar.ResourceKey,
-                         avatar.SortOrder,
-                         avatar.IsEnabled,
-                         0)))
+                          avatar.PriceGold,
+                          avatar.SortOrder,
+                          avatar.IsEnabled,
+                          0,
+                          avatar.StartsAt,
+                          avatar.EndsAt)))
             {
                 errors[$"Avatar {avatar.Id}: {error.Key}"] = error.Value;
+            }
+        }
+
+        foreach (var wallpaper in imported.Wallpapers)
+        {
+            foreach (var error in GameConfigValidation.Validate(new WallpaperDefinitionInput(
+                         wallpaper.Id,
+                         wallpaper.Name,
+                         wallpaper.ResourceKey,
+                          wallpaper.PriceGold,
+                          wallpaper.SortOrder,
+                          wallpaper.IsEnabled,
+                          0,
+                          wallpaper.StartsAt,
+                          wallpaper.EndsAt)))
+            {
+                errors[$"Wallpaper {wallpaper.Id}: {error.Key}"] = error.Value;
             }
         }
 
@@ -448,6 +601,9 @@ public sealed class GameConfigService(
                     Id = target.Id,
                     Name = target.Name,
                     ResourceKey = target.ResourceKey,
+                    PriceGold = target.PriceGold,
+                    StartsAt = target.StartsAt,
+                    EndsAt = target.EndsAt,
                     SortOrder = target.SortOrder,
                     IsEnabled = target.IsEnabled
                 });
@@ -456,8 +612,50 @@ public sealed class GameConfigService(
 
             avatar.Name = target.Name;
             avatar.ResourceKey = target.ResourceKey;
+            avatar.PriceGold = target.PriceGold;
+            avatar.StartsAt = target.StartsAt;
+            avatar.EndsAt = target.EndsAt;
             avatar.SortOrder = target.SortOrder;
             avatar.IsEnabled = target.IsEnabled;
+        }
+    }
+
+    private void ApplyWallpaperTargets(
+        GameConfigVersion draft,
+        IReadOnlyDictionary<int, WallpaperConfigResponse> targets)
+    {
+        foreach (var wallpaper in draft.Wallpapers.Where(value => !targets.ContainsKey(value.Id)).ToArray())
+        {
+            repository.RemoveWallpaper(wallpaper);
+        }
+
+        foreach (var target in targets.Values)
+        {
+            var wallpaper = draft.Wallpapers.SingleOrDefault(value => value.Id == target.Id);
+            if (wallpaper is null)
+            {
+                draft.Wallpapers.Add(new WallpaperDefinition
+                {
+                    Revision = draft.Revision,
+                    Id = target.Id,
+                    Name = target.Name,
+                    ResourceKey = target.ResourceKey,
+                    PriceGold = target.PriceGold,
+                    StartsAt = target.StartsAt,
+                    EndsAt = target.EndsAt,
+                    SortOrder = target.SortOrder,
+                    IsEnabled = target.IsEnabled
+                });
+                continue;
+            }
+
+            wallpaper.Name = target.Name;
+            wallpaper.ResourceKey = target.ResourceKey;
+            wallpaper.PriceGold = target.PriceGold;
+            wallpaper.StartsAt = target.StartsAt;
+            wallpaper.EndsAt = target.EndsAt;
+            wallpaper.SortOrder = target.SortOrder;
+            wallpaper.IsEnabled = target.IsEnabled;
         }
     }
 

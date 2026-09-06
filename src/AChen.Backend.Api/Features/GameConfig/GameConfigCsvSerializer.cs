@@ -24,11 +24,27 @@ public sealed class GameConfigCsvSerializer
                 avatar.Id.ToString(CultureInfo.InvariantCulture),
                 avatar.Name,
                 avatar.ResourceKey,
-                "",
-                "",
-                "",
+                avatar.PriceGold.ToString(CultureInfo.InvariantCulture),
+                avatar.StartsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
+                avatar.EndsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
                 avatar.SortOrder.ToString(CultureInfo.InvariantCulture),
                 avatar.IsEnabled.ToString(CultureInfo.InvariantCulture)
+            ]);
+        }
+
+        foreach (var wallpaper in data.Wallpapers.OrderBy(value => value.SortOrder).ThenBy(value => value.Id))
+        {
+            AppendRow(csv,
+            [
+                "Wallpaper",
+                wallpaper.Id.ToString(CultureInfo.InvariantCulture),
+                wallpaper.Name,
+                wallpaper.ResourceKey,
+                wallpaper.PriceGold.ToString(CultureInfo.InvariantCulture),
+                wallpaper.StartsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
+                wallpaper.EndsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
+                wallpaper.SortOrder.ToString(CultureInfo.InvariantCulture),
+                wallpaper.IsEnabled.ToString(CultureInfo.InvariantCulture)
             ]);
         }
 
@@ -59,6 +75,7 @@ public sealed class GameConfigCsvSerializer
         }
 
         var avatars = new List<AvatarConfigResponse>();
+        var wallpapers = new List<WallpaperConfigResponse>();
         var cardPacks = new List<CardPackConfigResponse>();
         try
         {
@@ -91,27 +108,44 @@ public sealed class GameConfigCsvSerializer
                 }
 
                 var table = row[0].Trim();
-                var id = ParseInt(row[1], "Id", parser.LineNumber, positive: true);
+                var allowsZeroId = table.Equals("Avatar", StringComparison.OrdinalIgnoreCase) ||
+                    table.Equals("Wallpaper", StringComparison.OrdinalIgnoreCase);
+                var id = ParseInt(row[1], "Id", parser.LineNumber, positive: !allowsZeroId);
+                if (allowsZeroId && id < 0)
+                {
+                    throw Invalid($"CSV 第 {parser.LineNumber} 行 Id 不能为负数。");
+                }
                 var name = RestoreSpreadsheetValue(row[2]).Trim();
                 var resourceKey = RestoreSpreadsheetValue(row[3]).Trim();
+                var priceGold = ParseLong(row[4], "PriceGold", parser.LineNumber);
                 var sortOrder = ParseInt(row[7], "SortOrder", parser.LineNumber, positive: false);
                 var isEnabled = ParseBool(row[8], "IsEnabled", parser.LineNumber);
                 if (table.Equals("Avatar", StringComparison.OrdinalIgnoreCase))
                 {
-                    avatars.Add(new AvatarConfigResponse(id, name, resourceKey, sortOrder, isEnabled));
+                    avatars.Add(new AvatarConfigResponse(id, name, resourceKey, priceGold, sortOrder, isEnabled,
+                        ParseDate(row[5], "StartsAt", parser.LineNumber),
+                        ParseDate(row[6], "EndsAt", parser.LineNumber)));
+                    continue;
+                }
+
+                if (table.Equals("Wallpaper", StringComparison.OrdinalIgnoreCase))
+                {
+                    wallpapers.Add(new WallpaperConfigResponse(id, name, resourceKey, priceGold, sortOrder, isEnabled,
+                        ParseDate(row[5], "StartsAt", parser.LineNumber),
+                        ParseDate(row[6], "EndsAt", parser.LineNumber)));
                     continue;
                 }
 
                 if (!table.Equals("CardPack", StringComparison.OrdinalIgnoreCase))
                 {
-                    throw Invalid($"CSV 第 {parser.LineNumber} 行 Table 只能是 Avatar 或 CardPack。");
+                    throw Invalid($"CSV 第 {parser.LineNumber} 行 Table 只能是 Avatar、Wallpaper 或 CardPack。");
                 }
 
                 cardPacks.Add(new CardPackConfigResponse(
                     id,
                     name,
                     resourceKey,
-                    ParseLong(row[4], "PriceGold", parser.LineNumber),
+                    priceGold,
                     ParseDate(row[5], "StartsAt", parser.LineNumber),
                     ParseDate(row[6], "EndsAt", parser.LineNumber),
                     sortOrder,
@@ -123,7 +157,7 @@ public sealed class GameConfigCsvSerializer
             throw Invalid($"CSV 第 {exception.LineNumber} 行格式无效。");
         }
 
-        return new GameConfigDraftData(avatars, cardPacks);
+        return new GameConfigDraftData(avatars, wallpapers, cardPacks);
     }
 
     private static int ParseInt(string value, string field, long line, bool positive)

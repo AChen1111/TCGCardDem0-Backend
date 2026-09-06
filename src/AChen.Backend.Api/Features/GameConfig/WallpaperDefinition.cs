@@ -1,6 +1,6 @@
 namespace AChen.Backend.Api.Features.GameConfig;
 
-public sealed class AvatarDefinition
+public sealed class WallpaperDefinition
 {
     public long Revision { get; init; }
     public int Id { get; init; }

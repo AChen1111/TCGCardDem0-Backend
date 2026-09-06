@@ -286,6 +286,12 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTimeOffset?>("StartsAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("EndsAt")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -295,6 +301,9 @@ namespace AChen.Backend.Api.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
+
+                    b.Property<long>("PriceGold")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
@@ -308,7 +317,30 @@ namespace AChen.Backend.Api.Data.Migrations
 
                     b.ToTable("AvatarDefinitions", t =>
                         {
-                            t.HasCheckConstraint("CK_AvatarDefinitions_Id_Positive", "Id > 0");
+                            t.HasCheckConstraint("CK_AvatarDefinitions_Id_NonNegative", "Id >= 0");
+
+                            t.HasCheckConstraint("CK_AvatarDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.WallpaperDefinition", b =>
+                {
+                    b.Property<long>("Revision").HasColumnType("INTEGER");
+                    b.Property<int>("Id").HasColumnType("INTEGER");
+                    b.Property<bool>("IsEnabled").HasColumnType("INTEGER");
+                    b.Property<DateTimeOffset?>("StartsAt").HasColumnType("INTEGER");
+                    b.Property<DateTimeOffset?>("EndsAt").HasColumnType("INTEGER");
+                    b.Property<string>("Name").IsRequired().HasMaxLength(64).HasColumnType("TEXT");
+                    b.Property<long>("PriceGold").HasColumnType("INTEGER");
+                    b.Property<string>("ResourceKey").IsRequired().HasMaxLength(128).HasColumnType("TEXT");
+                    b.Property<int>("SortOrder").HasColumnType("INTEGER");
+                    b.HasKey("Revision", "Id");
+                    b.HasIndex("Revision", "ResourceKey").IsUnique();
+                    b.HasIndex("Revision", "SortOrder", "Id");
+                    b.ToTable("WallpaperDefinitions", t =>
+                        {
+                            t.HasCheckConstraint("CK_WallpaperDefinitions_Id_NonNegative", "Id >= 0");
+                            t.HasCheckConstraint("CK_WallpaperDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
                         });
                 });
 
@@ -418,6 +450,10 @@ namespace AChen.Backend.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("OwnedBackgroundIds")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("Revision")
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
@@ -506,6 +542,17 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.Navigation("Version");
                 });
 
+            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.WallpaperDefinition", b =>
+                {
+                    b.HasOne("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", "Version")
+                        .WithMany("Wallpapers")
+                        .HasForeignKey("Revision")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Version");
+                });
+
             modelBuilder.Entity("AChen.Backend.Api.Features.Players.PlayerProfile", b =>
                 {
                     b.HasOne("AChen.Backend.Api.Features.Auth.User", "User")
@@ -534,6 +581,8 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.Navigation("Avatars");
 
                     b.Navigation("CardPacks");
+
+                    b.Navigation("Wallpapers");
                 });
 #pragma warning restore 612, 618
         }

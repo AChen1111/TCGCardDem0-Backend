@@ -4,8 +4,21 @@ public sealed record AvatarConfigResponse(
     int Id,
     string Name,
     string ResourceKey,
+    long PriceGold,
     int SortOrder,
-    bool IsEnabled);
+    bool IsEnabled,
+    DateTimeOffset? StartsAt = null,
+    DateTimeOffset? EndsAt = null);
+
+public sealed record WallpaperConfigResponse(
+    int Id,
+    string Name,
+    string ResourceKey,
+    long PriceGold,
+    int SortOrder,
+    bool IsEnabled,
+    DateTimeOffset? StartsAt = null,
+    DateTimeOffset? EndsAt = null);
 
 public sealed record CardPackConfigResponse(
     int Id,
@@ -22,15 +35,30 @@ public sealed record GameConfigBootstrapResponse(
     long Revision,
     DateTimeOffset PublishedAt,
     IReadOnlyList<AvatarConfigResponse> Avatars,
+    IReadOnlyList<WallpaperConfigResponse> Wallpapers,
     IReadOnlyList<CardPackConfigResponse> CardPacks);
 
 public sealed record AvatarDefinitionInput(
     int Id,
     string Name,
     string ResourceKey,
+    long PriceGold,
     int SortOrder,
     bool IsEnabled,
-    long ExpectedEditRevision);
+    long ExpectedEditRevision,
+    DateTimeOffset? StartsAt = null,
+    DateTimeOffset? EndsAt = null);
+
+public sealed record WallpaperDefinitionInput(
+    int Id,
+    string Name,
+    string ResourceKey,
+    long PriceGold,
+    int SortOrder,
+    bool IsEnabled,
+    long ExpectedEditRevision,
+    DateTimeOffset? StartsAt = null,
+    DateTimeOffset? EndsAt = null);
 
 public sealed record CardPackDefinitionInput(
     int Id,
@@ -49,6 +77,7 @@ public sealed record GameConfigAdminResponse(
     long? PublishedRevision,
     DateTimeOffset? PublishedAt,
     IReadOnlyList<AvatarConfigResponse> Avatars,
+    IReadOnlyList<WallpaperConfigResponse> Wallpapers,
     IReadOnlyList<CardPackConfigResponse> CardPacks);
 
 public sealed record GameConfigPublicationResponse(
@@ -58,4 +87,13 @@ public sealed record GameConfigPublicationResponse(
 
 public sealed record GameConfigDraftData(
     IReadOnlyList<AvatarConfigResponse> Avatars,
+    IReadOnlyList<WallpaperConfigResponse> Wallpapers,
     IReadOnlyList<CardPackConfigResponse> CardPacks);
+
+public sealed record ReplaceGameConfigDraftRequest(
+    long ExpectedEditRevision,
+    IReadOnlyList<AvatarConfigResponse> Avatars,
+    IReadOnlyList<WallpaperConfigResponse> Wallpapers,
+    IReadOnlyList<CardPackConfigResponse> CardPacks);
+
+public sealed record PublishGameConfigRequest(long ExpectedEditRevision);

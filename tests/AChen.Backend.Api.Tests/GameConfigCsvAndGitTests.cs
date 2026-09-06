@@ -13,7 +13,8 @@ public sealed class GameConfigCsvAndGitTests
         var serializer = new GameConfigCsvSerializer();
         var startsAt = new DateTimeOffset(2026, 8, 23, 10, 0, 0, TimeSpan.FromHours(8));
         var source = new GameConfigDraftData(
-            [new AvatarConfigResponse(1, "默认,头像", "Avatar_\"Default\"", 2, true)],
+            [new AvatarConfigResponse(0, "默认,头像", "Avatar_\"Default\"", 200, 2, true)],
+            [new WallpaperConfigResponse(1, "默认壁纸", "Wallpaper_Default", 500, 1, true)],
             [new CardPackConfigResponse(1001, "+基础卡包", "CardPack_Default", 1000, startsAt, null, 3, false)]);
 
         var csv = serializer.Serialize(source);
@@ -21,6 +22,8 @@ public sealed class GameConfigCsvAndGitTests
 
         Assert.Equal("默认,头像", Assert.Single(restored.Avatars).Name);
         Assert.Equal("Avatar_\"Default\"", restored.Avatars[0].ResourceKey);
+        Assert.Equal(200, restored.Avatars[0].PriceGold);
+        Assert.Equal("Wallpaper_Default", Assert.Single(restored.Wallpapers).ResourceKey);
         Assert.Equal("+基础卡包", Assert.Single(restored.CardPacks).Title);
         Assert.Equal(startsAt, restored.CardPacks[0].StartsAt);
         Assert.False(restored.CardPacks[0].IsEnabled);
@@ -47,7 +50,7 @@ public sealed class GameConfigCsvAndGitTests
 
         var admin = await service.GetAdminAsync(CancellationToken.None);
         await service.UpsertAvatarAsync(
-            new AvatarDefinitionInput(1, "Published", "Avatar_Published", 0, true, admin.EditRevision),
+            new AvatarDefinitionInput(1, "Published", "Avatar_Published", 0, 0, true, admin.EditRevision),
             CancellationToken.None);
         admin = await service.GetAdminAsync(CancellationToken.None);
         await service.PublishAsync(admin.EditRevision, CancellationToken.None);
@@ -55,7 +58,8 @@ public sealed class GameConfigCsvAndGitTests
 
         await service.ReplaceDraftAsync(
             new GameConfigDraftData(
-                [new AvatarConfigResponse(2, "Imported", "Avatar_Imported", 1, true)],
+                [new AvatarConfigResponse(2, "Imported", "Avatar_Imported", 0, 1, true)],
+                [],
                 []),
             admin.EditRevision,
             CancellationToken.None);
@@ -77,7 +81,7 @@ public sealed class GameConfigCsvAndGitTests
 
         var admin = await service.GetAdminAsync(CancellationToken.None);
         await service.UpsertAvatarAsync(
-            new AvatarDefinitionInput(1, "Version A", "Avatar_A", 0, true, admin.EditRevision),
+            new AvatarDefinitionInput(1, "Version A", "Avatar_A", 0, 0, true, admin.EditRevision),
             CancellationToken.None);
         var firstStatus = await git.SaveSnapshotAsync("first", CancellationToken.None);
         Assert.False(firstStatus.HasUncommittedDraft);
@@ -85,7 +89,7 @@ public sealed class GameConfigCsvAndGitTests
 
         admin = await service.GetAdminAsync(CancellationToken.None);
         await service.UpsertAvatarAsync(
-            new AvatarDefinitionInput(1, "Version B", "Avatar_A", 0, true, admin.EditRevision),
+            new AvatarDefinitionInput(1, "Version B", "Avatar_A", 0, 0, true, admin.EditRevision),
             CancellationToken.None);
         var secondStatus = await git.SaveSnapshotAsync("second", CancellationToken.None);
         Assert.Equal(2, secondStatus.History.Count);

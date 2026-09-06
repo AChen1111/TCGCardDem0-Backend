@@ -16,6 +16,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<PlayerProfile> PlayerProfiles => Set<PlayerProfile>();
     public DbSet<GameConfigVersion> GameConfigVersions => Set<GameConfigVersion>();
     public DbSet<AvatarDefinition> AvatarDefinitions => Set<AvatarDefinition>();
+    public DbSet<WallpaperDefinition> WallpaperDefinitions => Set<WallpaperDefinition>();
     public DbSet<CardPackDefinition> CardPackDefinitions => Set<CardPackDefinition>();
     public DbSet<ContentRelease> ContentReleases => Set<ContentRelease>();
     public DbSet<ContentReleaseFile> ContentReleaseFiles => Set<ContentReleaseFile>();
@@ -58,6 +59,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                         value => value.Aggregate(0, (hash, id) => HashCode.Combine(hash, id)),
                         value => value.ToList()))
                 .HasColumnType("TEXT");
+            profile.Property(value => value.OwnedBackgroundIds)
+                .HasConversion(
+                    value => JsonSerializer.Serialize(value, JsonSerializerOptions.Default),
+                    value => JsonSerializer.Deserialize<List<int>>(value, JsonSerializerOptions.Default) ?? new List<int>(),
+                    new ValueComparer<List<int>>(
+                        (left, right) => left != null && right != null && left.SequenceEqual(right),
+                        value => value.Aggregate(0, (hash, id) => HashCode.Combine(hash, id)),
+                        value => value.ToList()))
+                .HasColumnType("TEXT");
             profile.Property(value => value.Revision).IsConcurrencyToken();
             profile.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
             profile.Property(value => value.UpdatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
@@ -92,13 +102,38 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             avatar.HasKey(value => new { value.Revision, value.Id });
             avatar.Property(value => value.Name).HasMaxLength(64).IsRequired();
             avatar.Property(value => value.ResourceKey).HasMaxLength(128).IsRequired();
+            avatar.Property(value => value.StartsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            avatar.Property(value => value.EndsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
             avatar.HasIndex(value => new { value.Revision, value.ResourceKey }).IsUnique();
             avatar.HasIndex(value => new { value.Revision, value.SortOrder, value.Id });
             avatar.ToTable(table => table.HasCheckConstraint(
-                "CK_AvatarDefinitions_Id_Positive",
-                "Id > 0"));
+                "CK_AvatarDefinitions_Id_NonNegative",
+                "Id >= 0"));
+            avatar.ToTable(table => table.HasCheckConstraint(
+                "CK_AvatarDefinitions_PriceGold_NonNegative",
+                "PriceGold >= 0"));
             avatar.HasOne(value => value.Version)
                 .WithMany(value => value.Avatars)
+                .HasForeignKey(value => value.Revision)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WallpaperDefinition>(wallpaper =>
+        {
+            wallpaper.HasKey(value => new { value.Revision, value.Id });
+            wallpaper.Property(value => value.Name).HasMaxLength(64).IsRequired();
+            wallpaper.Property(value => value.ResourceKey).HasMaxLength(128).IsRequired();
+            wallpaper.Property(value => value.StartsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            wallpaper.Property(value => value.EndsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            wallpaper.HasIndex(value => new { value.Revision, value.ResourceKey }).IsUnique();
+            wallpaper.HasIndex(value => new { value.Revision, value.SortOrder, value.Id });
+            wallpaper.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_WallpaperDefinitions_Id_NonNegative", "Id >= 0");
+                table.HasCheckConstraint("CK_WallpaperDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
+            });
+            wallpaper.HasOne(value => value.Version)
+                .WithMany(value => value.Wallpapers)
                 .HasForeignKey(value => value.Revision)
                 .OnDelete(DeleteBehavior.Cascade);
         });

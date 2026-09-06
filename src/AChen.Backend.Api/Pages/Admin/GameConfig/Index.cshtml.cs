@@ -16,7 +16,7 @@ public sealed class IndexModel(
     private const long MaxCsvBytes = 5 * 1024 * 1024;
 
     public GameConfigAdminResponse Config { get; private set; } =
-        new(1, 0, null, null, [], []);
+        new(1, 0, null, null, [], [], []);
     public GameConfigGitStatus GitStatus { get; private set; } =
         GameConfigGitStatus.Unavailable("main", "正在读取配置仓库状态。");
 
@@ -54,7 +54,7 @@ public sealed class IndexModel(
             var imported = csvSerializer.Deserialize(stream.ToArray());
             await service.ReplaceDraftAsync(imported, expectedEditRevision, cancellationToken);
             TempData["Message"] =
-                $"CSV 已载入草稿：{imported.Avatars.Count} 个头像，{imported.CardPacks.Count} 个卡包。";
+                $"CSV 已载入草稿：{imported.Avatars.Count} 个头像，{imported.Wallpapers.Count} 个壁纸，{imported.CardPacks.Count} 个卡包。";
         }
         catch (GameConfigCsvException exception)
         {
@@ -102,6 +102,7 @@ public sealed class IndexModel(
         int id,
         string name,
         string resourceKey,
+        long priceGold,
         int sortOrder,
         bool isEnabled,
         long expectedEditRevision,
@@ -112,6 +113,7 @@ public sealed class IndexModel(
                     id,
                     name,
                     resourceKey,
+                    priceGold,
                     sortOrder,
                     isEnabled,
                     expectedEditRevision),
@@ -125,6 +127,36 @@ public sealed class IndexModel(
         ExecuteAsync(
             () => service.DeleteAvatarAsync(id, expectedEditRevision, cancellationToken),
             "头像草稿已删除。");
+
+    public Task<IActionResult> OnPostSaveWallpaperAsync(
+        int id,
+        string name,
+        string resourceKey,
+        long priceGold,
+        int sortOrder,
+        bool isEnabled,
+        long expectedEditRevision,
+        CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            () => service.UpsertWallpaperAsync(
+                new WallpaperDefinitionInput(
+                    id,
+                    name,
+                    resourceKey,
+                    priceGold,
+                    sortOrder,
+                    isEnabled,
+                    expectedEditRevision),
+                cancellationToken),
+            "壁纸草稿已保存。");
+
+    public Task<IActionResult> OnPostDeleteWallpaperAsync(
+        int id,
+        long expectedEditRevision,
+        CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            () => service.DeleteWallpaperAsync(id, expectedEditRevision, cancellationToken),
+            "壁纸草稿已删除。");
 
     public Task<IActionResult> OnPostSaveCardPackAsync(
         int id,

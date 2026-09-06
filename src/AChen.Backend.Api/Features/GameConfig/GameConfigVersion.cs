@@ -15,5 +15,6 @@ public sealed class GameConfigVersion
     public DateTimeOffset UpdatedAt { get; set; }
     public DateTimeOffset? PublishedAt { get; set; }
     public List<AvatarDefinition> Avatars { get; } = [];
+    public List<WallpaperDefinition> Wallpapers { get; } = [];
     public List<CardPackDefinition> CardPacks { get; } = [];
 }

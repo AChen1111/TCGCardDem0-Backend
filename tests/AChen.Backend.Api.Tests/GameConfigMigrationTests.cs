@@ -26,6 +26,8 @@ public sealed class GameConfigMigrationTests
                 await db.Database.ExecuteSqlRawAsync(UserInsertSql(legacyUser, "legacy"));
                 await db.Database.ExecuteSqlRawAsync(ProfileInsertSql(numericUser, "42"));
                 await db.Database.ExecuteSqlRawAsync(ProfileInsertSql(legacyUser, "avatar.default"));
+                await migrator.MigrateAsync("20260902150000_PlayerOwnedAvatarIds");
+                await db.Database.ExecuteSqlRawAsync("UPDATE PlayerProfiles SET BackgroundId = 1");
                 await migrator.MigrateAsync();
             }
 
@@ -35,6 +37,7 @@ public sealed class GameConfigMigrationTests
                 Assert.Equal(2, profiles.Length);
                 Assert.Null(profiles.Single(value => value.Nickname == "legacy").AvatarId);
                 Assert.Equal(42, profiles.Single(value => value.Nickname == "numeric").AvatarId);
+                Assert.All(profiles, profile => Assert.Equal(new[] { 1 }, profile.OwnedBackgroundIds));
             }
         }
         finally

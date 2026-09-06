@@ -5,9 +5,23 @@ public static class GameConfigValidation
     public static Dictionary<string, string[]> Validate(AvatarDefinitionInput input)
     {
         var errors = new Dictionary<string, string[]>();
-        ValidateId(input.Id, errors);
+        ValidateNonNegativeId(input.Id, errors);
         ValidateText(input.Name, 64, "name", "名称", errors);
         ValidateText(input.ResourceKey, 128, "resourceKey", "资源键", errors);
+        ValidatePrice(input.PriceGold, errors);
+        ValidateDates(input.StartsAt, input.EndsAt, errors);
+        ValidateExpectedEditRevision(input.ExpectedEditRevision, errors);
+        return errors;
+    }
+
+    public static Dictionary<string, string[]> Validate(WallpaperDefinitionInput input)
+    {
+        var errors = new Dictionary<string, string[]>();
+        ValidateNonNegativeId(input.Id, errors);
+        ValidateText(input.Name, 64, "name", "名称", errors);
+        ValidateText(input.ResourceKey, 128, "resourceKey", "资源键", errors);
+        ValidatePrice(input.PriceGold, errors);
+        ValidateDates(input.StartsAt, input.EndsAt, errors);
         ValidateExpectedEditRevision(input.ExpectedEditRevision, errors);
         return errors;
     }
@@ -18,10 +32,7 @@ public static class GameConfigValidation
         ValidateId(input.Id, errors);
         ValidateText(input.Title, 64, "title", "标题", errors);
         ValidateText(input.CoverResourceKey, 128, "coverResourceKey", "封面资源键", errors);
-        if (input.PriceGold < 0)
-        {
-            errors["priceGold"] = ["金币价格不能为负数"];
-        }
+        ValidatePrice(input.PriceGold, errors);
 
         if (input.StartsAt is not null && input.EndsAt is not null && input.EndsAt <= input.StartsAt)
         {
@@ -37,6 +48,30 @@ public static class GameConfigValidation
         if (id <= 0)
         {
             errors["id"] = ["ID 必须大于 0"];
+        }
+    }
+
+    private static void ValidateNonNegativeId(int id, Dictionary<string, string[]> errors)
+    {
+        if (id < 0)
+        {
+            errors["id"] = ["ID 不能为负数"];
+        }
+    }
+
+    private static void ValidatePrice(long priceGold, Dictionary<string, string[]> errors)
+    {
+        if (priceGold < 0)
+        {
+            errors["priceGold"] = ["金币价格不能为负数"];
+        }
+    }
+
+    private static void ValidateDates(DateTimeOffset? startsAt, DateTimeOffset? endsAt, Dictionary<string, string[]> errors)
+    {
+        if (startsAt is not null && endsAt is not null && endsAt <= startsAt)
+        {
+            errors["endsAt"] = ["结束时间必须晚于开始时间"];
         }
     }
 

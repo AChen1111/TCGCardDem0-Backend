@@ -1,3 +1,5 @@
+using AChen.Backend.Api.Features.ContentDelivery;
+
 namespace AChen.Backend.Api.Features.GameConfig;
 
 public static class GameConfigEndpoints
@@ -6,8 +8,38 @@ public static class GameConfigEndpoints
     {
         endpoints.MapGet("/api/game-config/bootstrap", GetBootstrapAsync)
             .RequireRateLimiting("game-config");
+        var admin = endpoints.MapGroup("/api/game-config/admin")
+            .RequireAuthorization(ContentPublisherAuthentication.Policy)
+            .RequireRateLimiting("content-management");
+        admin.MapGet("/draft", GetDraftAsync);
+        admin.MapPut("/draft", ReplaceDraftAsync);
+        admin.MapPost("/publish", PublishAsync);
         return endpoints;
     }
+
+    private static Task<GameConfigAdminResponse> GetDraftAsync(
+        GameConfigService service,
+        CancellationToken cancellationToken) =>
+        service.GetAdminAsync(cancellationToken);
+
+    private static async Task<IResult> ReplaceDraftAsync(
+        ReplaceGameConfigDraftRequest request,
+        GameConfigService service,
+        CancellationToken cancellationToken)
+    {
+        var data = new GameConfigDraftData(
+            request.Avatars ?? [],
+            request.Wallpapers ?? [],
+            request.CardPacks ?? []);
+        await service.ReplaceDraftAsync(data, request.ExpectedEditRevision, cancellationToken);
+        return Results.Ok(await service.GetAdminAsync(cancellationToken));
+    }
+
+    private static async Task<IResult> PublishAsync(
+        PublishGameConfigRequest request,
+        GameConfigService service,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await service.PublishAsync(request.ExpectedEditRevision, cancellationToken));
 
     private static async Task<IResult> GetBootstrapAsync(
         HttpContext context,

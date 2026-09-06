@@ -11,6 +11,38 @@ namespace AChen.Backend.Api.Tests;
 public sealed class GameConfigEndpointsTests
 {
     [Fact]
+    public async Task Admin_json_workflow_requires_key_and_keeps_draft_private_until_publish()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/game-config/admin/draft")).StatusCode);
+
+        client.DefaultRequestHeaders.Add("X-Content-Publish-Key", ApiFactory.PublishKey);
+        var draft = await client.GetFromJsonAsync<GameConfigAdminResponse>("/api/game-config/admin/draft");
+        Assert.NotNull(draft);
+        var replacement = new ReplaceGameConfigDraftRequest(
+            draft.EditRevision,
+            [new AvatarConfigResponse(0, "默认头像", "a_00", 200, 0, true)],
+            [new WallpaperConfigResponse(1, "默认壁纸", "c_01", 500, 0, true)],
+            [new CardPackConfigResponse(1, "基础卡包", "c_00", 100, null, null, 0, true)]);
+        var upload = await client.PutAsJsonAsync("/api/game-config/admin/draft", replacement);
+        upload.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.NotFound, (await factory.CreateClient().GetAsync("/api/game-config/bootstrap")).StatusCode);
+
+        var uploaded = await upload.Content.ReadFromJsonAsync<GameConfigAdminResponse>();
+        Assert.NotNull(uploaded);
+        var publish = await client.PostAsJsonAsync(
+            "/api/game-config/admin/publish",
+            new PublishGameConfigRequest(uploaded.EditRevision));
+        publish.EnsureSuccessStatusCode();
+
+        var bootstrap = await factory.CreateClient().GetFromJsonAsync<GameConfigPayload>("/api/game-config/bootstrap");
+        Assert.NotNull(bootstrap);
+        Assert.Equal(2, bootstrap.SchemaVersion);
+        Assert.Single(bootstrap.Wallpapers);
+    }
+
+    [Fact]
     public async Task Bootstrap_returns_404_before_first_publication()
     {
         using var factory = new ApiFactory();
@@ -51,7 +83,11 @@ public sealed class GameConfigEndpointsTests
 
         var admin = await service.GetAdminAsync(CancellationToken.None);
         await service.UpsertAvatarAsync(
-            new AvatarDefinitionInput(1, "默认头像", "Avatar_Default", 0, true, admin.EditRevision),
+            new AvatarDefinitionInput(0, "默认头像", "Avatar_Default", 200, 0, true, admin.EditRevision),
+            CancellationToken.None);
+        admin = await service.GetAdminAsync(CancellationToken.None);
+        await service.UpsertWallpaperAsync(
+            new WallpaperDefinitionInput(1, "默认壁纸", "Wallpaper_Default", 500, 0, true, admin.EditRevision),
             CancellationToken.None);
         admin = await service.GetAdminAsync(CancellationToken.None);
         await service.UpsertCardPackAsync(
@@ -78,9 +114,11 @@ public sealed class GameConfigEndpointsTests
         var payload = await response.Content.ReadFromJsonAsync<GameConfigPayload>();
         Assert.NotNull(payload);
         Assert.Equal(publication.PublishedRevision, payload.Revision);
-        Assert.Equal(1, payload.SchemaVersion);
+        Assert.Equal(2, payload.SchemaVersion);
         Assert.Single(payload.Avatars);
         Assert.Equal("Avatar_Default", payload.Avatars[0].ResourceKey);
+        Assert.Equal(200, payload.Avatars[0].PriceGold);
+        Assert.Single(payload.Wallpapers);
         Assert.Single(payload.CardPacks);
         Assert.Equal(1000, payload.CardPacks[0].PriceGold);
 
@@ -127,7 +165,7 @@ public sealed class GameConfigEndpointsTests
 
         var admin = await service.GetAdminAsync(CancellationToken.None);
         await service.UpsertAvatarAsync(
-            new AvatarDefinitionInput(5, "Avatar", "Avatar_5", 0, true, admin.EditRevision),
+            new AvatarDefinitionInput(5, "Avatar", "Avatar_5", 0, 0, true, admin.EditRevision),
             CancellationToken.None);
 
         var stale = await Assert.ThrowsAsync<ApiException>(() => service.UpsertCardPackAsync(
@@ -222,7 +260,9 @@ public sealed class GameConfigEndpointsTests
         int SchemaVersion,
         long Revision,
         AvatarPayload[] Avatars,
+        WallpaperPayload[] Wallpapers,
         CardPackPayload[] CardPacks);
-    private sealed record AvatarPayload(int Id, string ResourceKey, bool IsEnabled);
+    private sealed record AvatarPayload(int Id, string ResourceKey, long PriceGold, bool IsEnabled);
+    private sealed record WallpaperPayload(int Id, string ResourceKey, long PriceGold, bool IsEnabled);
     private sealed record CardPackPayload(int Id, long PriceGold, bool IsEnabled);
 }
