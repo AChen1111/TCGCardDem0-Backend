@@ -22,6 +22,8 @@
 | GET | `/api/player/bootstrap` | Bearer | 当前玩家数据（含当前头像、壁纸、金币和已拥有列表） |
 | PATCH | `/api/player/profile` | Bearer | 更新昵称、当前头像和背景图；不能改金币或已拥有列表 |
 | POST | `/api/player/purchase` | Bearer | 购买头像或壁纸；价格和扣款由服务端按已发布配置计算 |
+| GET | `/api/accounts/admin/gold?username=` | Publish Key | 按账号查询金币 |
+| POST | `/api/accounts/admin/gold` | Publish Key | 给指定账号增加金币 |
 | GET | `/api/game-config/bootstrap` | 无 | 已发布的头像和卡包配置；支持 `If-None-Match` |
 | POST | `/api/content/releases` | Publish Key | 创建内容 Release |
 | PUT | `/api/content/releases/{id}/artifact` | Publish Key | 上传 `application/zip` 内容包 |
@@ -70,6 +72,17 @@
 ```
 
 `catalogType` 仅支持 `avatar` 和 `wallpaper`。价格取已发布配置的 `priceGold`，请求体不能指定金额。余额不足返回 `INSUFFICIENT_GOLD`，已拥有返回 `ITEM_ALREADY_OWNED`，购买成功后只加入拥有列表，不自动装备。
+
+给账号增加金币：
+
+```json
+{
+  "username": "AChen1234",
+  "amount": 100000
+}
+```
+
+`amount` 必须大于 0。账号不存在返回 `ACCOUNT_NOT_FOUND`。
 
 创建内容 Release：
 

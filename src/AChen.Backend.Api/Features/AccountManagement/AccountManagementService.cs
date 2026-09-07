@@ -1,5 +1,6 @@
 using AChen.Backend.Api.Data;
 using AChen.Backend.Api.Features.Players;
+using AChen.Backend.Api.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace AChen.Backend.Api.Features.AccountManagement;
@@ -172,6 +173,114 @@ public sealed class AccountManagementService(
             accountId,
             username);
         return true;
+    }
+
+    public async Task<AccountGoldSummary?> GetGoldByUsernameAsync(
+        string username,
+        CancellationToken cancellationToken)
+    {
+        var normalized = NormalizeUsername(username);
+        if (normalized is null)
+        {
+            return null;
+        }
+
+        var account = await db.Users
+            .AsNoTracking()
+            .Include(value => value.PlayerProfile)
+            .SingleOrDefaultAsync(value => value.NormalizedUsername == normalized, cancellationToken);
+        if (account is null)
+        {
+            return null;
+        }
+
+        var profile = account.PlayerProfile ?? PlayerProfile.ForNewAccount(
+            account.Id,
+            account.Username,
+            account.CreatedAt);
+        return new AccountGoldSummary(
+            account.Id,
+            account.Username,
+            profile.Nickname,
+            profile.Gold,
+            profile.Revision);
+    }
+
+    public async Task<AccountGoldGrantResponse> AddGoldByUsernameAsync(
+        AddAccountGoldRequest request,
+        CancellationToken cancellationToken)
+    {
+        var normalized = NormalizeUsername(request.Username);
+        if (normalized is null)
+        {
+            throw new ApiException(StatusCodes.Status400BadRequest, "INVALID_USERNAME", "账号不能为空");
+        }
+
+        if (request.Amount <= 0)
+        {
+            throw new ApiException(StatusCodes.Status400BadRequest, "INVALID_GOLD_AMOUNT", "金币数量必须大于 0");
+        }
+
+        var account = await db.Users
+            .Include(value => value.PlayerProfile)
+            .SingleOrDefaultAsync(value => value.NormalizedUsername == normalized, cancellationToken);
+        if (account is null)
+        {
+            throw new ApiException(StatusCodes.Status404NotFound, "ACCOUNT_NOT_FOUND", "未找到该账号");
+        }
+
+        var now = timeProvider.GetUtcNow();
+        var profile = account.PlayerProfile;
+        if (profile is null)
+        {
+            profile = PlayerProfile.ForNewAccount(account.Id, account.Username, now);
+            db.PlayerProfiles.Add(profile);
+        }
+
+        if (profile.Gold > long.MaxValue - request.Amount)
+        {
+            throw new ApiException(StatusCodes.Status400BadRequest, "GOLD_OVERFLOW", "金币数量超出上限");
+        }
+
+        var previousGold = profile.Gold;
+        profile.Gold += request.Amount;
+        profile.Revision++;
+        profile.UpdatedAt = now;
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ApiException(
+                StatusCodes.Status409Conflict,
+                "PLAYER_DATA_CHANGED",
+                "玩家数据已在其他位置发生变化，请重试");
+        }
+
+        logger.LogInformation(
+            "Granted {Amount} gold to account {AccountId} ({Username}): {PreviousGold} -> {Gold} at revision {Revision}.",
+            request.Amount,
+            account.Id,
+            account.Username,
+            previousGold,
+            profile.Gold,
+            profile.Revision);
+
+        return new AccountGoldGrantResponse(
+            account.Id,
+            account.Username,
+            previousGold,
+            request.Amount,
+            profile.Gold,
+            profile.Revision);
+    }
+
+    private static string? NormalizeUsername(string? username)
+    {
+        var trimmed = username?.Trim();
+        return string.IsNullOrEmpty(trimmed) ? null : trimmed.ToUpperInvariant();
     }
 
     private static Dictionary<string, string[]> Validate(UpdateManagedPlayerData request)

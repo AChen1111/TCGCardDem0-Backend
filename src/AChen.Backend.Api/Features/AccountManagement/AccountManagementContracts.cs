@@ -43,3 +43,22 @@ public sealed record ManagedAccountUpdateResult(
 {
     public bool Succeeded => Found && Errors.Count == 0;
 }
+
+public sealed record AccountGoldSummary(
+    Guid Id,
+    string Username,
+    string Nickname,
+    long Gold,
+    long Revision);
+
+public sealed record AddAccountGoldRequest(
+    string Username,
+    long Amount);
+
+public sealed record AccountGoldGrantResponse(
+    Guid Id,
+    string Username,
+    long PreviousGold,
+    long AddedAmount,
+    long Gold,
+    long Revision);

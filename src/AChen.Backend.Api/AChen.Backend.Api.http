@@ -40,6 +40,22 @@ Authorization: Bearer {{accessToken}}
 
 ###
 
+GET {{host}}/api/accounts/admin/gold?username=AChen1234
+X-Content-Publish-Key: {{publishKey}}
+
+###
+
+POST {{host}}/api/accounts/admin/gold
+X-Content-Publish-Key: {{publishKey}}
+Content-Type: application/json
+
+{
+  "username": "AChen1234",
+  "amount": 100000
+}
+
+###
+
 PATCH {{host}}/api/player/profile
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json

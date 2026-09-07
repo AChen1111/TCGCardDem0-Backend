@@ -280,6 +280,7 @@ app.MapGet("/ready", async (AppDbContext db, CancellationToken cancellationToken
         : Results.StatusCode(StatusCodes.Status503ServiceUnavailable));
 app.MapAuthEndpoints();
 app.MapPlayerEndpoints();
+app.MapAccountManagementEndpoints();
 app.MapGameConfigEndpoints();
 app.MapContentEndpoints();
 app.MapRazorPages();
