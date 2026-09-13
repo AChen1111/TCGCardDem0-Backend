@@ -357,6 +357,11 @@ namespace AChen.Backend.Api.Data.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PoolKey")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
                     b.Property<long?>("EndsAt")
                         .HasColumnType("INTEGER");
 

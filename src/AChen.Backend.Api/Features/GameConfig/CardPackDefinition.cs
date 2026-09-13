@@ -6,6 +6,7 @@ public sealed class CardPackDefinition
     public int Id { get; init; }
     public required string Title { get; set; }
     public required string CoverResourceKey { get; set; }
+    public required string PoolKey { get; set; }
     public long PriceGold { get; set; }
     public DateTimeOffset? StartsAt { get; set; }
     public DateTimeOffset? EndsAt { get; set; }

@@ -249,6 +249,7 @@
                         <label>ID<input type="number" min="1" name="id" required placeholder="例如 1001" /></label>
                         <label>标题<input name="title" maxlength="64" required placeholder="基础卡包" /></label>
                         <label>封面 Resource Key<input name="coverResourceKey" maxlength="128" required placeholder="CardPack_Default" /></label>
+                        <label>卡池 Key<input name="poolKey" maxlength="32" required placeholder="Card01" /></label>
                         <label>金币价格<input type="number" min="0" name="priceGold" value="0" required /></label>
                         <label>开始时间<input name="startsAt" placeholder="ISO-8601，可留空" /></label>
                         <label>结束时间<input name="endsAt" placeholder="ISO-8601，可留空" /></label>
@@ -261,14 +262,15 @@
 
                 <div class="config-table-wrap wide-table">
                     <table class="config-table card-pack-table" data-config-table="card-packs">
-                        <thead><tr><th>ID / 标题</th><th>封面 Key</th><th>价格</th><th>开放时间</th><th>排序</th><th>状态</th><th>操作</th></tr></thead>
+                        <thead><tr><th>ID / 标题</th><th>封面 Key</th><th>卡池</th><th>价格</th><th>开放时间</th><th>排序</th><th>状态</th><th>操作</th></tr></thead>
                         <tbody>
                         @foreach (var cardPack in Model.Config.CardPacks)
                         {
                             var formId = $"card-pack-{cardPack.Id}";
-                            <tr data-config-item data-search-text="@cardPack.Id @cardPack.Title @cardPack.CoverResourceKey" data-enabled="@cardPack.IsEnabled.ToString().ToLowerInvariant()">
+                            <tr data-config-item data-search-text="@cardPack.Id @cardPack.Title @cardPack.CoverResourceKey @cardPack.PoolKey" data-enabled="@cardPack.IsEnabled.ToString().ToLowerInvariant()">
                                 <td data-label="ID / 标题"><span class="config-id">#@cardPack.Id</span><input form="@formId" type="hidden" name="id" value="@cardPack.Id" /><input form="@formId" name="title" value="@cardPack.Title" maxlength="64" required /></td>
                                 <td data-label="封面 Key"><input class="code-input" form="@formId" name="coverResourceKey" value="@cardPack.CoverResourceKey" maxlength="128" required /></td>
+                                <td data-label="卡池"><input class="code-input" form="@formId" name="poolKey" value="@cardPack.PoolKey" maxlength="32" required /></td>
                                 <td data-label="价格"><div class="price-input"><input form="@formId" type="number" min="0" name="priceGold" value="@cardPack.PriceGold" required /><span>金币</span></div></td>
                                 <td class="time-range" data-label="开放时间"><input form="@formId" name="startsAt" value="@cardPack.StartsAt?.ToString("O")" placeholder="开始时间" aria-label="开始时间" /><span>至</span><input form="@formId" name="endsAt" value="@cardPack.EndsAt?.ToString("O")" placeholder="结束时间" aria-label="结束时间" /></td>
                                 <td data-label="排序"><input class="compact-input" form="@formId" type="number" name="sortOrder" value="@cardPack.SortOrder" /></td>
@@ -281,9 +283,9 @@
                         }
                         @if (Model.Config.CardPacks.Count == 0)
                         {
-                            <tr class="server-empty"><td colspan="7" class="empty"><strong>还没有卡包配置</strong><span>从上方创建第一个卡包条目。</span></td></tr>
+                            <tr class="server-empty"><td colspan="8" class="empty"><strong>还没有卡包配置</strong><span>从上方创建第一个卡包条目。</span></td></tr>
                         }
-                        <tr class="filter-empty" data-filter-empty hidden><td colspan="7" class="empty"><strong>没有匹配项</strong><span>换一个关键词或状态筛选。</span></td></tr>
+                        <tr class="filter-empty" data-filter-empty hidden><td colspan="8" class="empty"><strong>没有匹配项</strong><span>换一个关键词或状态筛选。</span></td></tr>
                         </tbody>
                     </table>
                 </div>

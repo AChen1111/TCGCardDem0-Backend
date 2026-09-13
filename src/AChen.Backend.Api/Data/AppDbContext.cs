@@ -156,6 +156,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             cardPack.HasKey(value => new { value.Revision, value.Id });
             cardPack.Property(value => value.Title).HasMaxLength(64).IsRequired();
             cardPack.Property(value => value.CoverResourceKey).HasMaxLength(128).IsRequired();
+            cardPack.Property(value => value.PoolKey).HasMaxLength(32).IsRequired();
             cardPack.Property(value => value.StartsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
             cardPack.Property(value => value.EndsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
             cardPack.HasIndex(value => new { value.Revision, value.SortOrder, value.Id });

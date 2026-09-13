@@ -15,7 +15,7 @@ public sealed class GameConfigCsvAndGitTests
         var source = new GameConfigDraftData(
             [new AvatarConfigResponse(0, "默认,头像", "Avatar_\"Default\"", 200, 2, true)],
             [new WallpaperConfigResponse(1, "默认壁纸", "Wallpaper_Default", 500, 1, true)],
-            [new CardPackConfigResponse(1001, "+基础卡包", "CardPack_Default", 1000, startsAt, null, 3, false)]);
+            [new CardPackConfigResponse(1001, "+基础卡包", "CardPack_Default", "Card01", 1000, startsAt, null, 3, false)]);
 
         var csv = serializer.Serialize(source);
         var restored = serializer.Deserialize(csv);
@@ -123,6 +123,7 @@ public sealed class GameConfigCsvAndGitTests
                     1001,
                     "Remote Pack",
                     "CardPack_Remote",
+                    "Card01",
                     99,
                     null,
                     null,

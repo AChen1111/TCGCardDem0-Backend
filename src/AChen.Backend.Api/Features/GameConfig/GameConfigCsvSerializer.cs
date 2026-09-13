@@ -9,7 +9,7 @@ public sealed class GameConfigCsvSerializer
     private static readonly string[] Header =
     [
         "Table", "Id", "Name", "ResourceKey", "PriceGold",
-        "StartsAt", "EndsAt", "SortOrder", "IsEnabled"
+        "StartsAt", "EndsAt", "SortOrder", "IsEnabled", "PoolKey"
     ];
 
     public byte[] Serialize(GameConfigDraftData data)
@@ -28,7 +28,8 @@ public sealed class GameConfigCsvSerializer
                 avatar.StartsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
                 avatar.EndsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
                 avatar.SortOrder.ToString(CultureInfo.InvariantCulture),
-                avatar.IsEnabled.ToString(CultureInfo.InvariantCulture)
+                avatar.IsEnabled.ToString(CultureInfo.InvariantCulture),
+                ""
             ]);
         }
 
@@ -44,7 +45,8 @@ public sealed class GameConfigCsvSerializer
                 wallpaper.StartsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
                 wallpaper.EndsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
                 wallpaper.SortOrder.ToString(CultureInfo.InvariantCulture),
-                wallpaper.IsEnabled.ToString(CultureInfo.InvariantCulture)
+                wallpaper.IsEnabled.ToString(CultureInfo.InvariantCulture),
+                ""
             ]);
         }
 
@@ -60,7 +62,8 @@ public sealed class GameConfigCsvSerializer
                 cardPack.StartsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
                 cardPack.EndsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
                 cardPack.SortOrder.ToString(CultureInfo.InvariantCulture),
-                cardPack.IsEnabled.ToString(CultureInfo.InvariantCulture)
+                cardPack.IsEnabled.ToString(CultureInfo.InvariantCulture),
+                cardPack.PoolKey
             ]);
         }
 
@@ -145,6 +148,7 @@ public sealed class GameConfigCsvSerializer
                     id,
                     name,
                     resourceKey,
+                    RestoreSpreadsheetValue(row[9]).Trim(),
                     priceGold,
                     ParseDate(row[5], "StartsAt", parser.LineNumber),
                     ParseDate(row[6], "EndsAt", parser.LineNumber),

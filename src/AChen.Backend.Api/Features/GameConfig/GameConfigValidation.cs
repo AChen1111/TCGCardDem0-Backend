@@ -32,6 +32,7 @@ public static class GameConfigValidation
         ValidateId(input.Id, errors);
         ValidateText(input.Title, 64, "title", "标题", errors);
         ValidateText(input.CoverResourceKey, 128, "coverResourceKey", "封面资源键", errors);
+        ValidateText(input.PoolKey, 32, "poolKey", "卡池标识", errors);
         ValidatePrice(input.PriceGold, errors);
 
         if (input.StartsAt is not null && input.EndsAt is not null && input.EndsAt <= input.StartsAt)

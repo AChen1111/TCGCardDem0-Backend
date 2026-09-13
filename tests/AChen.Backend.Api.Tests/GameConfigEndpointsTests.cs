@@ -24,7 +24,7 @@ public sealed class GameConfigEndpointsTests
             draft.EditRevision,
             [new AvatarConfigResponse(0, "默认头像", "a_00", 200, 0, true)],
             [new WallpaperConfigResponse(1, "默认壁纸", "c_01", 500, 0, true)],
-            [new CardPackConfigResponse(1, "基础卡包", "c_00", 100, null, null, 0, true)]);
+            [new CardPackConfigResponse(1, "基础卡包", "c_00", "Card01", 100, null, null, 0, true)]);
         var upload = await client.PutAsJsonAsync("/api/game-config/admin/draft", replacement);
         upload.EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.NotFound, (await factory.CreateClient().GetAsync("/api/game-config/bootstrap")).StatusCode);
@@ -38,7 +38,7 @@ public sealed class GameConfigEndpointsTests
 
         var bootstrap = await factory.CreateClient().GetFromJsonAsync<GameConfigPayload>("/api/game-config/bootstrap");
         Assert.NotNull(bootstrap);
-        Assert.Equal(2, bootstrap.SchemaVersion);
+        Assert.Equal(3, bootstrap.SchemaVersion);
         Assert.Single(bootstrap.Wallpapers);
     }
 
@@ -95,6 +95,7 @@ public sealed class GameConfigEndpointsTests
                 1001,
                 "基础卡包",
                 "CardPack_Default",
+                "Card01",
                 1000,
                 null,
                 null,
@@ -114,7 +115,7 @@ public sealed class GameConfigEndpointsTests
         var payload = await response.Content.ReadFromJsonAsync<GameConfigPayload>();
         Assert.NotNull(payload);
         Assert.Equal(publication.PublishedRevision, payload.Revision);
-        Assert.Equal(2, payload.SchemaVersion);
+        Assert.Equal(3, payload.SchemaVersion);
         Assert.Single(payload.Avatars);
         Assert.Equal("Avatar_Default", payload.Avatars[0].ResourceKey);
         Assert.Equal(200, payload.Avatars[0].PriceGold);
@@ -135,6 +136,7 @@ public sealed class GameConfigEndpointsTests
                 1001,
                 "基础卡包",
                 "CardPack_Default",
+                "Card01",
                 1200,
                 null,
                 null,
@@ -169,7 +171,7 @@ public sealed class GameConfigEndpointsTests
             CancellationToken.None);
 
         var stale = await Assert.ThrowsAsync<ApiException>(() => service.UpsertCardPackAsync(
-            new CardPackDefinitionInput(5, "Pack", "Pack_5", 1, null, null, 0, true, admin.EditRevision),
+            new CardPackDefinitionInput(5, "Pack", "Pack_5", "Card01", 1, null, null, 0, true, admin.EditRevision),
             CancellationToken.None));
         Assert.Equal("GAME_CONFIG_CHANGED", stale.Code);
 

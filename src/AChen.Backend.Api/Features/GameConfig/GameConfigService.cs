@@ -229,6 +229,7 @@ public sealed class GameConfigService(
                 Id = input.Id,
                 Title = input.Title.Trim(),
                 CoverResourceKey = input.CoverResourceKey.Trim(),
+                PoolKey = input.PoolKey.Trim(),
                 PriceGold = input.PriceGold,
                 StartsAt = input.StartsAt,
                 EndsAt = input.EndsAt,
@@ -240,6 +241,7 @@ public sealed class GameConfigService(
         {
             cardPack.Title = input.Title.Trim();
             cardPack.CoverResourceKey = input.CoverResourceKey.Trim();
+            cardPack.PoolKey = input.PoolKey.Trim();
             cardPack.PriceGold = input.PriceGold;
             cardPack.StartsAt = input.StartsAt;
             cardPack.EndsAt = input.EndsAt;
@@ -415,6 +417,7 @@ public sealed class GameConfigService(
                 Id = cardPack.Id,
                 Title = cardPack.Title,
                 CoverResourceKey = cardPack.CoverResourceKey,
+                PoolKey = cardPack.PoolKey,
                 PriceGold = cardPack.PriceGold,
                 StartsAt = cardPack.StartsAt,
                 EndsAt = cardPack.EndsAt,
@@ -427,7 +430,7 @@ public sealed class GameConfigService(
     }
 
     private static GameConfigBootstrapResponse ToBootstrapResponse(GameConfigVersion version) => new(
-        2,
+        3,
         version.Revision,
         version.PublishedAt ?? throw new InvalidOperationException("Published config is missing PublishedAt."),
         version.Avatars.OrderBy(value => value.SortOrder).ThenBy(value => value.Id).Select(ToResponse).ToArray(),
@@ -458,6 +461,7 @@ public sealed class GameConfigService(
         value.Id,
         value.Title,
         value.CoverResourceKey,
+        value.PoolKey,
         value.PriceGold,
         value.StartsAt,
         value.EndsAt,
@@ -567,6 +571,7 @@ public sealed class GameConfigService(
                          cardPack.Id,
                          cardPack.Title,
                          cardPack.CoverResourceKey,
+                         cardPack.PoolKey,
                          cardPack.PriceGold,
                          cardPack.StartsAt,
                          cardPack.EndsAt,
@@ -679,6 +684,7 @@ public sealed class GameConfigService(
                     Id = target.Id,
                     Title = target.Title,
                     CoverResourceKey = target.CoverResourceKey,
+                    PoolKey = target.PoolKey,
                     PriceGold = target.PriceGold,
                     StartsAt = target.StartsAt,
                     EndsAt = target.EndsAt,
@@ -690,6 +696,7 @@ public sealed class GameConfigService(
 
             cardPack.Title = target.Title;
             cardPack.CoverResourceKey = target.CoverResourceKey;
+            cardPack.PoolKey = target.PoolKey;
             cardPack.PriceGold = target.PriceGold;
             cardPack.StartsAt = target.StartsAt;
             cardPack.EndsAt = target.EndsAt;
