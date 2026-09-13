@@ -195,7 +195,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             weight.Property(value => value.Rarity).ValueGeneratedNever();
             weight.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_GachaRarityWeights_Rarity_Range", "Rarity >= 0 AND Rarity <= 3");
+                table.HasCheckConstraint("CK_GachaRarityWeights_Rarity_Range", "Rarity >= 0 AND Rarity <= 4");
                 table.HasCheckConstraint("CK_GachaRarityWeights_Weight_Positive", "Weight > 0");
             });
         });

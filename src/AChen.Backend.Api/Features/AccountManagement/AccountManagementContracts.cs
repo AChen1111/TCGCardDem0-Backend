@@ -1,3 +1,5 @@
+using AChen.Backend.Api.Features.Players;
+
 namespace AChen.Backend.Api.Features.AccountManagement;
 
 public sealed record ManagedAccountSummary(
@@ -50,6 +52,20 @@ public sealed record AccountGoldSummary(
     string Nickname,
     long Gold,
     long Revision);
+
+public sealed record AdminPlayerLookupResponse(
+    Guid Id,
+    string Username,
+    string Nickname,
+    long Gold,
+    long Revision,
+    int? AvatarId,
+    IReadOnlyList<int> OwnedAvatarIds,
+    int? BackgroundId,
+    IReadOnlyList<int> OwnedBackgroundIds,
+    IReadOnlyList<OwnedCard> OwnedCards,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
 
 public sealed record AddAccountGoldRequest(
     string Username,

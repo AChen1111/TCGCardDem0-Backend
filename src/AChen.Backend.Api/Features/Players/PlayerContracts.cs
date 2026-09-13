@@ -18,6 +18,7 @@ public sealed record PurchaseShopItemRequest(
     long ExpectedRevision);
 
 public sealed record DrawCardsRequest(
+    int PackId,
     string PoolKey,
     int Count,
     long ExpectedRevision);

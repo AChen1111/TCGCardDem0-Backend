@@ -171,6 +171,13 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser();
     });
 });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AdminWeb", policy =>
+        policy.WithOrigins("http://127.0.0.1:5173", "http://localhost:5173")
+            .WithHeaders("X-Content-Publish-Key", "Content-Type")
+            .WithMethods("GET", "PUT", "POST", "OPTIONS"));
+});
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -272,6 +279,7 @@ app.Use(async (context, next) =>
     await next();
 });
 app.UseExceptionHandler();
+app.UseCors("AdminWeb");
 app.UseStaticFiles();
 app.UseRateLimiter();
 app.UseAuthentication();

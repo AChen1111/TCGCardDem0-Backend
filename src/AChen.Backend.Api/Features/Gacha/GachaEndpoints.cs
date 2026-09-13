@@ -16,6 +16,16 @@ public static class GachaEndpoints
         admin.MapGet("/cards", GetAllCardsAsync);
         admin.MapPut("/cards", ImportAllCardsAsync)
             .WithMetadata(new RequestSizeLimitAttribute(GachaService.MaxCsvBytes));
+
+        var player = endpoints.MapGroup("/api/gacha")
+            .RequireAuthorization()
+            .RequireRateLimiting("player")
+            .AddEndpointFilter(async (context, next) =>
+            {
+                context.HttpContext.Response.Headers.CacheControl = "no-store";
+                return await next(context);
+            });
+        player.MapGet("/pools/{poolKey}", GetPoolAsync);
         return endpoints;
     }
 
@@ -48,4 +58,10 @@ public static class GachaEndpoints
         await context.Request.Body.CopyToAsync(stream, cancellationToken);
         return await service.ImportAllCardsAsync(stream.ToArray(), cancellationToken);
     }
+
+    private static Task<GachaPoolResponse> GetPoolAsync(
+        string poolKey,
+        GachaService service,
+        CancellationToken cancellationToken) =>
+        service.GetPoolAsync(poolKey, cancellationToken);
 }

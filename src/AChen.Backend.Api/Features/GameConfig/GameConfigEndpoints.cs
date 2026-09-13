@@ -1,9 +1,13 @@
 using AChen.Backend.Api.Features.ContentDelivery;
+using AChen.Backend.Api.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AChen.Backend.Api.Features.GameConfig;
 
 public static class GameConfigEndpoints
 {
+    public const int MaxCsvBytes = 5 * 1024 * 1024;
+
     public static IEndpointRouteBuilder MapGameConfigEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapGet("/api/game-config/bootstrap", GetBootstrapAsync)
@@ -13,6 +17,8 @@ public static class GameConfigEndpoints
             .RequireRateLimiting("content-management");
         admin.MapGet("/draft", GetDraftAsync);
         admin.MapPut("/draft", ReplaceDraftAsync);
+        admin.MapPut("/draft/csv", ImportDraftCsvAsync)
+            .WithMetadata(new RequestSizeLimitAttribute(MaxCsvBytes));
         admin.MapPost("/publish", PublishAsync);
         return endpoints;
     }
@@ -32,6 +38,40 @@ public static class GameConfigEndpoints
             request.Wallpapers ?? [],
             request.CardPacks ?? []);
         await service.ReplaceDraftAsync(data, request.ExpectedEditRevision, cancellationToken);
+        return Results.Ok(await service.GetAdminAsync(cancellationToken));
+    }
+
+    private static async Task<IResult> ImportDraftCsvAsync(
+        HttpContext context,
+        [FromQuery] long expectedEditRevision,
+        GameConfigCsvSerializer csvSerializer,
+        GameConfigService service,
+        CancellationToken cancellationToken)
+    {
+        using var stream = new MemoryStream();
+        await context.Request.Body.CopyToAsync(stream, cancellationToken);
+        if (stream.Length is <= 0 or > MaxCsvBytes)
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "VALIDATION_ERROR",
+                "请上传不超过 5 MiB 的有效 CSV 文件");
+        }
+
+        GameConfigDraftData imported;
+        try
+        {
+            imported = csvSerializer.Deserialize(stream.ToArray());
+        }
+        catch (GameConfigCsvException exception)
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "VALIDATION_ERROR",
+                exception.Message);
+        }
+
+        await service.ReplaceDraftAsync(imported, expectedEditRevision, cancellationToken);
         return Results.Ok(await service.GetAdminAsync(cancellationToken));
     }
 

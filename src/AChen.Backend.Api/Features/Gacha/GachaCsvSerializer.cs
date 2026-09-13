@@ -116,9 +116,9 @@ public sealed class GachaCsvSerializer
                 }
 
                 var rarity = ParseInt(row[4], "Rarity", parser.LineNumber);
-                if (rarity is < 0 or > 3)
+                if (rarity is < 0 or > 4)
                 {
-                    throw Invalid($"CSV 第 {parser.LineNumber} 行 Rarity 须为 0-3。");
+                    throw Invalid($"CSV 第 {parser.LineNumber} 行 Rarity 须为 0-4。");
                 }
 
                 rarityWeights.Add(new GachaRarityWeightResponse(

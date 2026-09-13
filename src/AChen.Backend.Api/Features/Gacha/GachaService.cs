@@ -168,6 +168,64 @@ public sealed class GachaService(
         return results;
     }
 
+    public async Task<GachaPoolResponse> GetPoolAsync(string poolKey, CancellationToken cancellationToken)
+    {
+        var key = poolKey?.Trim() ?? "";
+        if (key.Length is < 1 or > 32)
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "GACHA_POOL_NOT_FOUND",
+                "卡池不存在");
+        }
+
+        if (IsAllCardsPool(key))
+        {
+            var catalog = await LoadAllCardsAsync(cancellationToken);
+            if (catalog.Count == 0)
+            {
+                throw new ApiException(
+                    StatusCodes.Status422UnprocessableEntity,
+                    "ALL_CARDS_EMPTY",
+                    "尚未导入全部卡牌");
+            }
+
+            var allCards = catalog
+                .GroupBy(value => value.CardId, StringComparer.Ordinal)
+                .Select(group => group.First())
+                .OrderBy(value => value.CardId, StringComparer.Ordinal)
+                .Select(value => new GachaPoolCardResponse(value.CardId, value.SourcePool))
+                .ToArray();
+            return new GachaPoolResponse(key, allCards);
+        }
+
+        var data = await LoadAsync(cancellationToken);
+        if (data.PoolEntries.Count == 0)
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "GACHA_CONFIG_EMPTY",
+                "尚未导入抽卡配置");
+        }
+
+        var cards = data.PoolEntries
+            .Where(value => string.Equals(value.PoolKey, key, StringComparison.Ordinal))
+            .GroupBy(value => value.CardId, StringComparer.Ordinal)
+            .Select(group => group.First())
+            .OrderBy(value => value.CardId, StringComparer.Ordinal)
+            .Select(value => new GachaPoolCardResponse(value.CardId, key))
+            .ToArray();
+        if (cards.Length == 0)
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "GACHA_POOL_NOT_FOUND",
+                "卡池不存在");
+        }
+
+        return new GachaPoolResponse(key, cards);
+    }
+
     private static bool IsAllCardsPool(string poolKey) =>
         string.Equals(poolKey, GachaPoolKeys.AllCards, StringComparison.Ordinal);
 

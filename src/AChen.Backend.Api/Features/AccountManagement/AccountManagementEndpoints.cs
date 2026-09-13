@@ -20,9 +20,24 @@ public static class AccountManagementEndpoints
             });
 
         admin.MapGet("/gold", GetGoldAsync);
+        admin.MapGet("/player", GetPlayerAsync);
         admin.MapPost("/gold", AddGoldAsync)
             .WithMetadata(new RequestSizeLimitAttribute(RequestLimit));
         return endpoints;
+    }
+
+    private static async Task<IResult> GetPlayerAsync(
+        [FromQuery] string username,
+        AccountManagementService service,
+        CancellationToken cancellationToken)
+    {
+        var player = await service.GetPlayerByUsernameAsync(username, cancellationToken);
+        if (player is null)
+        {
+            throw new ApiException(StatusCodes.Status404NotFound, "ACCOUNT_NOT_FOUND", "未找到该账号");
+        }
+
+        return Results.Ok(player);
     }
 
     private static async Task<IResult> GetGoldAsync(

@@ -237,16 +237,45 @@ public sealed class PlayerService(
                 "一次抽取数量须为 1-10");
         }
 
+        var published = await gameConfigService.GetPublishedAsync(cancellationToken);
+        var now = timeProvider.GetUtcNow();
+        var pack = published.CardPacks.FirstOrDefault(value => value.Id == request.PackId);
+        if (pack is null || !IsOnSale(pack.IsEnabled, pack.StartsAt, pack.EndsAt, now))
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "CARD_PACK_NOT_AVAILABLE",
+                "该卡包不存在或尚未启用");
+        }
+
+        var poolKey = request.PoolKey.Trim();
+        if (!string.Equals(pack.PoolKey, poolKey, StringComparison.Ordinal))
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "CARD_PACK_POOL_MISMATCH",
+                "卡包与卡池不匹配");
+        }
+
         var profile = await GetRequiredAsync(userId, cancellationToken);
         if (profile.Revision != request.ExpectedRevision)
         {
             throw Changed();
         }
 
-        var draws = await gachaService.DrawAsync(request.PoolKey.Trim(), request.Count, cancellationToken);
+        if (profile.Gold < pack.PriceGold)
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "INSUFFICIENT_GOLD",
+                "金币不足");
+        }
+
+        var draws = await gachaService.DrawAsync(pack.PoolKey, request.Count, cancellationToken);
+        profile.Gold -= pack.PriceGold;
         profile.OwnedCards = MergeOwnedCards(profile.OwnedCards, draws);
         profile.Revision++;
-        profile.UpdatedAt = timeProvider.GetUtcNow();
+        profile.UpdatedAt = now;
         try
         {
             await repository.SaveChangesAsync(cancellationToken);
@@ -257,10 +286,12 @@ public sealed class PlayerService(
         }
 
         logger.LogInformation(
-            "Player {UserId} drew {Count} cards from {PoolKey} at revision {Revision}.",
+            "Player {UserId} drew {Count} cards from pack {PackId} pool {PoolKey} for {PriceGold} gold at revision {Revision}.",
             userId,
             request.Count,
-            request.PoolKey.Trim(),
+            pack.Id,
+            pack.PoolKey,
+            pack.PriceGold,
             profile.Revision);
         return new DrawCardsResponse(
             draws.Select(value => new CardDrawResultResponse(value.CardId, value.Rarity, value.SourcePool)).ToArray(),

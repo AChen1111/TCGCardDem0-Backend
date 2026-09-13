@@ -39,17 +39,29 @@ public sealed class PublishKeyAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    ContentPublisherCredentials credentials)
+    ContentPublisherCredentials credentials,
+    IHostEnvironment environment)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        // 本地开发不校验发布密钥, 控制台和 Unity 都不必再抄一把随机串.
+        if (environment.IsDevelopment())
+        {
+            return Task.FromResult(CreateTicket());
+        }
+
         var values = Request.Headers[ContentPublisherAuthentication.HeaderName];
         if (values.Count != 1 || !credentials.Validate(values[0]))
         {
             return Task.FromResult(AuthenticateResult.Fail("需要有效的内容发布密钥"));
         }
 
+        return Task.FromResult(CreateTicket());
+    }
+
+    AuthenticateResult CreateTicket()
+    {
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "content-publisher"),
@@ -57,10 +69,10 @@ public sealed class PublishKeyAuthenticationHandler(
             new Claim(ContentPublisherAuthentication.FingerprintClaim, credentials.GetFingerprint())
         };
         var identity = new ClaimsIdentity(claims, ContentPublisherAuthentication.Scheme);
-        return Task.FromResult(AuthenticateResult.Success(
+        return AuthenticateResult.Success(
             new AuthenticationTicket(
                 new ClaimsPrincipal(identity),
-                ContentPublisherAuthentication.Scheme)));
+                ContentPublisherAuthentication.Scheme));
     }
 
     protected override async Task HandleChallengeAsync(AuthenticationProperties properties)

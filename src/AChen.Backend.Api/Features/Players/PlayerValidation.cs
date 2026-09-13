@@ -54,6 +54,11 @@ public static class PlayerValidation
     public static Dictionary<string, string[]> Validate(DrawCardsRequest request)
     {
         var errors = new Dictionary<string, string[]>();
+        if (request.PackId <= 0)
+        {
+            errors["packId"] = ["卡包 ID 必须大于 0"];
+        }
+
         var poolKey = request.PoolKey?.Trim() ?? "";
         if (poolKey.Length is < 1 or > 32)
         {

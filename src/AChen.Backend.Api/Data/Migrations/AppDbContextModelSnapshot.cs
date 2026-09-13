@@ -447,7 +447,7 @@ namespace AChen.Backend.Api.Data.Migrations
 
                     b.ToTable("GachaRarityWeights", t =>
                         {
-                            t.HasCheckConstraint("CK_GachaRarityWeights_Rarity_Range", "Rarity >= 0 AND Rarity <= 3");
+                            t.HasCheckConstraint("CK_GachaRarityWeights_Rarity_Range", "Rarity >= 0 AND Rarity <= 4");
                             t.HasCheckConstraint("CK_GachaRarityWeights_Weight_Positive", "Weight > 0");
                         });
                 });

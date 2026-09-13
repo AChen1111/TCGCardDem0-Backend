@@ -206,6 +206,49 @@ public sealed class AccountManagementService(
             profile.Revision);
     }
 
+    public async Task<AdminPlayerLookupResponse?> GetPlayerByUsernameAsync(
+        string username,
+        CancellationToken cancellationToken)
+    {
+        var normalized = NormalizeUsername(username);
+        if (normalized is null)
+        {
+            return null;
+        }
+
+        var account = await db.Users
+            .AsNoTracking()
+            .Include(value => value.PlayerProfile)
+            .SingleOrDefaultAsync(value => value.NormalizedUsername == normalized, cancellationToken);
+        if (account is null)
+        {
+            return null;
+        }
+
+        var profile = account.PlayerProfile ?? PlayerProfile.ForNewAccount(
+            account.Id,
+            account.Username,
+            account.CreatedAt);
+        logger.LogInformation(
+            "Looked up player {AccountId} ({Username}) with {OwnedCardCount} owned cards.",
+            account.Id,
+            account.Username,
+            profile.OwnedCards.Count);
+        return new AdminPlayerLookupResponse(
+            account.Id,
+            account.Username,
+            profile.Nickname,
+            profile.Gold,
+            profile.Revision,
+            profile.AvatarId,
+            profile.OwnedAvatarIds.ToArray(),
+            profile.BackgroundId,
+            profile.OwnedBackgroundIds.ToArray(),
+            profile.OwnedCards.ToArray(),
+            profile.CreatedAt,
+            profile.UpdatedAt);
+    }
+
     public async Task<AccountGoldGrantResponse> AddGoldByUsernameAsync(
         AddAccountGoldRequest request,
         CancellationToken cancellationToken)

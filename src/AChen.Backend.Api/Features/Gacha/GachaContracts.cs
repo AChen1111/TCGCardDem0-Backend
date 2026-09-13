@@ -28,3 +28,7 @@ public sealed record GachaConfigData(
     IReadOnlyList<GachaRarityWeightResponse> RarityWeights);
 
 public sealed record GachaDrawResult(string CardId, int Rarity, string SourcePool);
+
+public sealed record GachaPoolCardResponse(string CardId, string SourcePool);
+
+public sealed record GachaPoolResponse(string PoolKey, IReadOnlyList<GachaPoolCardResponse> Cards);
