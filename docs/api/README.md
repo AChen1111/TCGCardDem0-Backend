@@ -25,9 +25,14 @@
 | POST | `/api/auth/refresh` | 无 | 刷新并轮换 Token |
 | POST | `/api/auth/logout` | 无 | 吊销 Refresh Token |
 | GET | `/api/auth/me` | Bearer | 当前用户 |
-| GET | `/api/player/bootstrap` | Bearer | 当前玩家（头像、壁纸、金币、已拥有列表） |
+| GET | `/api/player/bootstrap` | Bearer | 当前玩家（头像、壁纸、卡牌收藏、金币、已拥有列表） |
 | PATCH | `/api/player/profile` | Bearer | 改昵称、当前头像和背景；不能改金币或已拥有列表 |
 | POST | `/api/player/purchase` | Bearer | 购买头像或壁纸；价格由已发布配置计算 |
+| POST | `/api/player/card-draws` | Bearer | 服务端抽卡；先按卡池权重抽卡，再按全局稀有度权重掷 shader |
+| GET | `/api/gacha/admin/config` | Publish Key | 查看当前抽卡卡池与稀有度权重 |
+| PUT | `/api/gacha/admin/config` | Publish Key | 上传 CSV，整表替换抽卡配置并立即生效 |
+| GET | `/api/gacha/admin/cards` | Publish Key | 查看全部卡牌目录 |
+| PUT | `/api/gacha/admin/cards` | Publish Key | 上传 CSV，整表替换全部卡牌目录并立即生效 |
 | GET | `/api/accounts/admin/gold?username=` | Publish Key | 按账号查金币 |
 | POST | `/api/accounts/admin/gold` | Publish Key | 给指定账号加金币 |
 | GET | `/api/game-config/bootstrap` | 无 | 已发布的头像、壁纸、卡包；支持 `If-None-Match` |
@@ -73,7 +78,19 @@
 }
 ```
 
-玩家数据含 `avatarId`、`ownedAvatarIds`、`backgroundId`、`ownedBackgroundIds`、`gold`、`revision`。注册默认昵称等于账号、`avatarId` 为 0、`backgroundId` 为 1，并拥有头像 0 与壁纸 1，`gold` 为 0。`PATCH /api/player/profile` 只能装备已拥有且已发布在售的头像或壁纸。
+玩家数据含 `avatarId`、`ownedAvatarIds`、`backgroundId`、`ownedBackgroundIds`、`ownedCards`、`gold`、`revision`。`ownedCards` 每项为 `{ cardId, rarity, count }`，`cardId` 为字符串，同一卡牌不同稀有度分开堆叠。注册默认昵称等于账号、`avatarId` 为 0、`backgroundId` 为 1，并拥有头像 0 与壁纸 1，`ownedCards` 为空，`gold` 为 0。`PATCH /api/player/profile` 只能装备已拥有且已发布在售的头像或壁纸。
+
+抽卡：
+
+```json
+{
+  "poolKey": "Card01",
+  "count": 1,
+  "expectedRevision": 0
+}
+```
+
+`count` 为 1-10。成功返回 `results: [{ cardId, rarity, sourcePool }]` 与最新 `player`。本次不扣金币。`poolKey` 为 `Card01` / `Card02` / `Card03` 时按分池权重抽；`CardAll` 从全部卡牌目录等权抽取，`sourcePool` 为该卡所属卡包。卡池 CSV 表头为 `Table,PoolKey,CardId,Weight,Rarity`；`Card` 行写卡池与卡牌权重，`Rarity` 行写全局稀有度权重（0 普通 / 1 炫彩）。全部卡牌 CSV 表头为 `CardId,SourcePool`，`CardId` 全局唯一。两张表导入即生效，不下发到 `game-config/bootstrap`。
 
 购买商品：
 
@@ -185,6 +202,10 @@
 | `AVATAR_NOT_AVAILABLE` / `WALLPAPER_NOT_AVAILABLE` | 422 | 外观不存在、未启用或不在售卖窗口 |
 | `ITEM_ALREADY_OWNED` | 422 | 重复购买 |
 | `INSUFFICIENT_GOLD` | 422 | 金币不足 |
+| `GACHA_CONFIG_EMPTY` | 422 | 尚未导入抽卡配置 |
+| `ALL_CARDS_EMPTY` | 422 | 抽 `CardAll` 时尚未导入全部卡牌 |
+| `GACHA_POOL_NOT_FOUND` | 422 | 卡池不存在 |
+| `INVALID_DRAW_COUNT` | 422 | 一次抽取数量不是 1-10 |
 | `ACCOUNT_NOT_FOUND` | 404 | 运营接口找不到账号 |
 | `INVALID_USERNAME` | 400 | 运营接口账号为空 |
 | `INVALID_GOLD_AMOUNT` | 400 | 加金币数量不大于 0 |

@@ -1,7 +1,10 @@
+using AChen.Backend.Api.Features.Gacha;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AChen.Backend.Api.Tests;
 
@@ -19,6 +22,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         $"achen-game-config-git-{Guid.NewGuid():N}");
 
     public const string PublishKey = "integration-test-content-publish-key-32-characters";
+
+    public IGachaRandom? GachaRandom { get; init; }
 
     public ApiFactory()
     {
@@ -47,6 +52,20 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
                 ["GameConfigGit:RepositoryRoot"] = gameConfigGitPath,
                 ["GameConfigGit:RemoteUrl"] = gameConfigGitRemoteUrl ?? ""
             });
+        });
+        builder.ConfigureTestServices(services =>
+        {
+            if (GachaRandom is null)
+            {
+                return;
+            }
+
+            foreach (var descriptor in services.Where(value => value.ServiceType == typeof(IGachaRandom)).ToList())
+            {
+                services.Remove(descriptor);
+            }
+
+            services.AddSingleton(GachaRandom);
         });
     }
 

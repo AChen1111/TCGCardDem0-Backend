@@ -24,6 +24,8 @@ public static class PlayerEndpoints
             .WithMetadata(new RequestSizeLimitAttribute(ProfileRequestLimit));
         group.MapPost("/purchase", PurchaseShopItemAsync)
             .WithMetadata(new RequestSizeLimitAttribute(ProfileRequestLimit));
+        group.MapPost("/card-draws", DrawCardsAsync)
+            .WithMetadata(new RequestSizeLimitAttribute(ProfileRequestLimit));
         return endpoints;
     }
 
@@ -49,6 +51,16 @@ public static class PlayerEndpoints
         PlayerService service,
         CancellationToken cancellationToken) =>
         Results.Ok(await service.PurchaseShopItemAsync(
+            GetUserId(context),
+            request,
+            cancellationToken));
+
+    private static async Task<IResult> DrawCardsAsync(
+        HttpContext context,
+        DrawCardsRequest request,
+        PlayerService service,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await service.DrawCardsAsync(
             GetUserId(context),
             request,
             cancellationToken));

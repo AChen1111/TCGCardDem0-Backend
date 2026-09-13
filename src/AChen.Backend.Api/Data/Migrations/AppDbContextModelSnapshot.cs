@@ -389,6 +389,64 @@ namespace AChen.Backend.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("AChen.Backend.Api.Features.Gacha.AllCard", b =>
+                {
+                    b.Property<string>("CardId")
+                        .ValueGeneratedNever()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourcePool")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("CardId");
+
+                    b.ToTable("AllCards");
+                });
+
+            modelBuilder.Entity("AChen.Backend.Api.Features.Gacha.GachaPoolEntry", b =>
+                {
+                    b.Property<string>("PoolKey")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CardId")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Weight")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("PoolKey", "CardId");
+
+                    b.HasIndex("PoolKey");
+
+                    b.ToTable("GachaPoolEntries", t =>
+                        {
+                            t.HasCheckConstraint("CK_GachaPoolEntries_Weight_Positive", "Weight > 0");
+                        });
+                });
+
+            modelBuilder.Entity("AChen.Backend.Api.Features.Gacha.GachaRarityWeight", b =>
+                {
+                    b.Property<int>("Rarity")
+                        .ValueGeneratedNever()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Weight")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Rarity");
+
+                    b.ToTable("GachaRarityWeights", t =>
+                        {
+                            t.HasCheckConstraint("CK_GachaRarityWeights_Rarity_Range", "Rarity >= 0 AND Rarity <= 3");
+                            t.HasCheckConstraint("CK_GachaRarityWeights_Weight_Positive", "Weight > 0");
+                        });
+                });
+
             modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", b =>
                 {
                     b.Property<long>("Revision")
@@ -451,6 +509,10 @@ namespace AChen.Backend.Api.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("OwnedBackgroundIds")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnedCards")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

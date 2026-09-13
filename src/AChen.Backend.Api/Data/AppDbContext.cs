@@ -1,6 +1,7 @@
 using System.Text.Json;
 using AChen.Backend.Api.Features.Auth;
 using AChen.Backend.Api.Features.ContentDelivery;
+using AChen.Backend.Api.Features.Gacha;
 using AChen.Backend.Api.Features.GameConfig;
 using AChen.Backend.Api.Features.Players;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<AvatarDefinition> AvatarDefinitions => Set<AvatarDefinition>();
     public DbSet<WallpaperDefinition> WallpaperDefinitions => Set<WallpaperDefinition>();
     public DbSet<CardPackDefinition> CardPackDefinitions => Set<CardPackDefinition>();
+    public DbSet<AllCard> AllCards => Set<AllCard>();
+    public DbSet<GachaPoolEntry> GachaPoolEntries => Set<GachaPoolEntry>();
+    public DbSet<GachaRarityWeight> GachaRarityWeights => Set<GachaRarityWeight>();
     public DbSet<ContentRelease> ContentReleases => Set<ContentRelease>();
     public DbSet<ContentReleaseFile> ContentReleaseFiles => Set<ContentReleaseFile>();
     public DbSet<ActiveContentRelease> ActiveContentReleases => Set<ActiveContentRelease>();
@@ -66,6 +70,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                     new ValueComparer<List<int>>(
                         (left, right) => left != null && right != null && left.SequenceEqual(right),
                         value => value.Aggregate(0, (hash, id) => HashCode.Combine(hash, id)),
+                        value => value.ToList()))
+                .HasColumnType("TEXT");
+            profile.Property(value => value.OwnedCards)
+                .HasConversion(
+                    value => JsonSerializer.Serialize(value, JsonSerializerOptions.Default),
+                    value => JsonSerializer.Deserialize<List<OwnedCard>>(value, JsonSerializerOptions.Default) ?? new List<OwnedCard>(),
+                    new ValueComparer<List<OwnedCard>>(
+                        (left, right) => left != null && right != null && left.SequenceEqual(right),
+                        value => value.Aggregate(0, (hash, card) => HashCode.Combine(hash, card.CardId, card.Rarity, card.Count)),
                         value => value.ToList()))
                 .HasColumnType("TEXT");
             profile.Property(value => value.Revision).IsConcurrencyToken();
@@ -155,6 +168,35 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany(value => value.CardPacks)
                 .HasForeignKey(value => value.Revision)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AllCard>(card =>
+        {
+            card.HasKey(value => value.CardId);
+            card.Property(value => value.CardId).HasMaxLength(32).IsRequired().ValueGeneratedNever();
+            card.Property(value => value.SourcePool).HasMaxLength(32).IsRequired();
+        });
+
+        modelBuilder.Entity<GachaPoolEntry>(entry =>
+        {
+            entry.HasKey(value => new { value.PoolKey, value.CardId });
+            entry.Property(value => value.PoolKey).HasMaxLength(32).IsRequired();
+            entry.Property(value => value.CardId).HasMaxLength(32).IsRequired();
+            entry.HasIndex(value => value.PoolKey);
+            entry.ToTable(table => table.HasCheckConstraint(
+                "CK_GachaPoolEntries_Weight_Positive",
+                "Weight > 0"));
+        });
+
+        modelBuilder.Entity<GachaRarityWeight>(weight =>
+        {
+            weight.HasKey(value => value.Rarity);
+            weight.Property(value => value.Rarity).ValueGeneratedNever();
+            weight.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_GachaRarityWeights_Rarity_Range", "Rarity >= 0 AND Rarity <= 3");
+                table.HasCheckConstraint("CK_GachaRarityWeights_Weight_Positive", "Weight > 0");
+            });
         });
 
         modelBuilder.Entity<ContentRelease>(release =>

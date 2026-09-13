@@ -81,6 +81,60 @@ Content-Type: application/json
 
 ###
 
+GET {{host}}/api/gacha/admin/config
+X-Content-Publish-Key: {{publishKey}}
+
+###
+
+PUT {{host}}/api/gacha/admin/config
+X-Content-Publish-Key: {{publishKey}}
+Content-Type: text/csv
+
+Table,PoolKey,CardId,Weight,Rarity
+Card,Card01,26077389,100,
+Rarity,,,90,0
+Rarity,,,10,1
+
+###
+
+GET {{host}}/api/gacha/admin/cards
+X-Content-Publish-Key: {{publishKey}}
+
+###
+
+PUT {{host}}/api/gacha/admin/cards
+X-Content-Publish-Key: {{publishKey}}
+Content-Type: text/csv
+
+CardId,SourcePool
+26077389,Card03
+
+###
+
+POST {{host}}/api/player/card-draws
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "poolKey": "Card01",
+  "count": 1,
+  "expectedRevision": 0
+}
+
+###
+
+POST {{host}}/api/player/card-draws
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "poolKey": "CardAll",
+  "count": 1,
+  "expectedRevision": 0
+}
+
+###
+
 GET {{host}}/api/game-config/bootstrap
 Accept: application/json
 

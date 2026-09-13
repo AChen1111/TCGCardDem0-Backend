@@ -38,6 +38,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.Equal(new[] { 0 }, player.OwnedAvatarIds);
         Assert.Equal(1, player.BackgroundId);
         Assert.Equal(new[] { 1 }, player.OwnedBackgroundIds);
+        Assert.Empty(player.OwnedCards);
         Assert.Equal(0, player.Gold);
         Assert.Equal(0, player.Revision);
     }
@@ -453,6 +454,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
             player.OwnedAvatarIds,
             player.BackgroundId,
             player.OwnedBackgroundIds,
+            player.OwnedCards,
             player.Gold,
             player.Revision);
     }
@@ -533,6 +535,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         IReadOnlyList<int> OwnedAvatarIds,
         int? BackgroundId,
         IReadOnlyList<int> OwnedBackgroundIds,
+        IReadOnlyList<OwnedCard> OwnedCards,
         long Gold,
         long Revision);
 }

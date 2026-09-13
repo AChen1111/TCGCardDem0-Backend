@@ -1,4 +1,5 @@
 using AChen.Backend.Api.Infrastructure;
+using AChen.Backend.Api.Features.Gacha;
 using AChen.Backend.Api.Features.GameConfig;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace AChen.Backend.Api.Features.Players;
 public sealed class PlayerService(
     IPlayerRepository repository,
     GameConfigService gameConfigService,
+    GachaService gachaService,
     TimeProvider timeProvider,
     ILogger<PlayerService> logger)
 {
@@ -216,6 +218,55 @@ public sealed class PlayerService(
         return ToResponse(profile);
     }
 
+    public async Task<DrawCardsResponse> DrawCardsAsync(
+        Guid userId,
+        DrawCardsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var errors = PlayerValidation.Validate(request);
+        if (errors.Count > 0)
+        {
+            throw new PlayerValidationException(errors);
+        }
+
+        if (request.Count is < 1 or > 10)
+        {
+            throw new ApiException(
+                StatusCodes.Status422UnprocessableEntity,
+                "INVALID_DRAW_COUNT",
+                "一次抽取数量须为 1-10");
+        }
+
+        var profile = await GetRequiredAsync(userId, cancellationToken);
+        if (profile.Revision != request.ExpectedRevision)
+        {
+            throw Changed();
+        }
+
+        var draws = await gachaService.DrawAsync(request.PoolKey.Trim(), request.Count, cancellationToken);
+        profile.OwnedCards = MergeOwnedCards(profile.OwnedCards, draws);
+        profile.Revision++;
+        profile.UpdatedAt = timeProvider.GetUtcNow();
+        try
+        {
+            await repository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Changed();
+        }
+
+        logger.LogInformation(
+            "Player {UserId} drew {Count} cards from {PoolKey} at revision {Revision}.",
+            userId,
+            request.Count,
+            request.PoolKey.Trim(),
+            profile.Revision);
+        return new DrawCardsResponse(
+            draws.Select(value => new CardDrawResultResponse(value.CardId, value.Rarity, value.SourcePool)).ToArray(),
+            ToResponse(profile));
+    }
+
     private async Task EnsureAvatarAvailableAsync(int avatarId, CancellationToken cancellationToken)
     {
         if (!await gameConfigService.IsAvatarAvailableAsync(avatarId, cancellationToken))
@@ -254,6 +305,26 @@ public sealed class PlayerService(
             "INVALID_ACCESS_TOKEN",
             "登录状态已失效，请重新登录");
 
+    private static List<OwnedCard> MergeOwnedCards(
+        IEnumerable<OwnedCard> existing,
+        IReadOnlyList<GachaDrawResult> draws)
+    {
+        var merged = existing.ToDictionary(value => (value.CardId, value.Rarity));
+        for (var i = 0; i < draws.Count; i++)
+        {
+            var draw = draws[i];
+            var key = (draw.CardId, draw.Rarity);
+            merged[key] = merged.TryGetValue(key, out var card)
+                ? card with { Count = card.Count + 1 }
+                : new OwnedCard(draw.CardId, draw.Rarity, 1);
+        }
+
+        return merged.Values
+            .OrderBy(value => value.CardId, StringComparer.Ordinal)
+            .ThenBy(value => value.Rarity)
+            .ToList();
+    }
+
     private static PlayerResponse ToResponse(PlayerProfile profile) => new(
         profile.UserId,
         profile.Nickname,
@@ -261,6 +332,7 @@ public sealed class PlayerService(
         profile.OwnedAvatarIds.ToArray(),
         profile.BackgroundId,
         profile.OwnedBackgroundIds.ToArray(),
+        profile.OwnedCards.ToArray(),
         profile.Gold,
         profile.Revision,
         profile.CreatedAt,

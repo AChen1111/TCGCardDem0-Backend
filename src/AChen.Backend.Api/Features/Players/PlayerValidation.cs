@@ -50,4 +50,21 @@ public static class PlayerValidation
 
         return errors;
     }
+
+    public static Dictionary<string, string[]> Validate(DrawCardsRequest request)
+    {
+        var errors = new Dictionary<string, string[]>();
+        var poolKey = request.PoolKey?.Trim() ?? "";
+        if (poolKey.Length is < 1 or > 32)
+        {
+            errors["poolKey"] = ["卡池标识长度须为 1-32"];
+        }
+
+        if (request.ExpectedRevision < 0)
+        {
+            errors["expectedRevision"] = ["预期版本号不能为负数"];
+        }
+
+        return errors;
+    }
 }

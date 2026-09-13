@@ -17,6 +17,17 @@ public sealed record PurchaseShopItemRequest(
     int ItemId,
     long ExpectedRevision);
 
+public sealed record DrawCardsRequest(
+    string PoolKey,
+    int Count,
+    long ExpectedRevision);
+
+public sealed record CardDrawResultResponse(string CardId, int Rarity, string SourcePool);
+
+public sealed record DrawCardsResponse(
+    IReadOnlyList<CardDrawResultResponse> Results,
+    PlayerResponse Player);
+
 public sealed record PlayerResponse(
     Guid Id,
     string Nickname,
@@ -24,6 +35,7 @@ public sealed record PlayerResponse(
     IReadOnlyList<int> OwnedAvatarIds,
     int? BackgroundId,
     IReadOnlyList<int> OwnedBackgroundIds,
+    IReadOnlyList<OwnedCard> OwnedCards,
     long Gold,
     long Revision,
     DateTimeOffset CreatedAt,
