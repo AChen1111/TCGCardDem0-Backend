@@ -2,7 +2,7 @@
 
 本地地址：`http://127.0.0.1:5080`。JSON 请求使用 `Content-Type: application/json`。错误通常返回 `application/problem+json`，带 `code` 与 `traceId`；响应头 `X-Request-Id` 与 `traceId` 相同，用于追踪。
 
-管理台页面与环境变量见 [日常操作](../../project/operations.md)。完整可执行示例见 `Backend/src/AChen.Backend.Api/AChen.Backend.Api.http`。
+管理台页面与环境变量见游戏仓库 [日常操作](https://github.com/AChen1111/TCGGameDem0/blob/v0.4/.doc/project/operations.md)。完整可执行示例见 `src/AChen.Backend.Api/AChen.Backend.Api.http`。
 
 ## 鉴权
 
