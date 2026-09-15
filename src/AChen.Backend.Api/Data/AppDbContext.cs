@@ -1,8 +1,6 @@
 using System.Text.Json;
 using AChen.Backend.Api.Features.Auth;
 using AChen.Backend.Api.Features.ContentDelivery;
-using AChen.Backend.Api.Features.Gacha;
-using AChen.Backend.Api.Features.GameConfig;
 using AChen.Backend.Api.Features.Players;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -15,13 +13,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
     public DbSet<PlayerProfile> PlayerProfiles => Set<PlayerProfile>();
-    public DbSet<GameConfigVersion> GameConfigVersions => Set<GameConfigVersion>();
-    public DbSet<AvatarDefinition> AvatarDefinitions => Set<AvatarDefinition>();
-    public DbSet<WallpaperDefinition> WallpaperDefinitions => Set<WallpaperDefinition>();
-    public DbSet<CardPackDefinition> CardPackDefinitions => Set<CardPackDefinition>();
-    public DbSet<AllCard> AllCards => Set<AllCard>();
-    public DbSet<GachaPoolEntry> GachaPoolEntries => Set<GachaPoolEntry>();
-    public DbSet<GachaRarityWeight> GachaRarityWeights => Set<GachaRarityWeight>();
     public DbSet<ContentRelease> ContentReleases => Set<ContentRelease>();
     public DbSet<ContentReleaseFile> ContentReleaseFiles => Set<ContentReleaseFile>();
     public DbSet<ActiveContentRelease> ActiveContentReleases => Set<ActiveContentRelease>();
@@ -91,113 +82,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithOne(value => value.PlayerProfile)
                 .HasForeignKey<PlayerProfile>(value => value.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<GameConfigVersion>(version =>
-        {
-            version.HasKey(value => value.Revision);
-            version.Property(value => value.Revision).ValueGeneratedNever();
-            version.Property(value => value.State).HasConversion<string>().HasMaxLength(16).IsRequired();
-            version.Property(value => value.EditRevision).IsConcurrencyToken();
-            version.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
-            version.Property(value => value.UpdatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
-            version.Property(value => value.PublishedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
-            version.HasIndex(value => value.State)
-                .IsUnique()
-                .HasFilter("\"State\" = 'Draft'");
-            version.ToTable(table => table.HasCheckConstraint(
-                "CK_GameConfigVersions_EditRevision_NonNegative",
-                "EditRevision >= 0"));
-        });
-
-        modelBuilder.Entity<AvatarDefinition>(avatar =>
-        {
-            avatar.HasKey(value => new { value.Revision, value.Id });
-            avatar.Property(value => value.Name).HasMaxLength(64).IsRequired();
-            avatar.Property(value => value.ResourceKey).HasMaxLength(128).IsRequired();
-            avatar.Property(value => value.StartsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
-            avatar.Property(value => value.EndsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
-            avatar.HasIndex(value => new { value.Revision, value.ResourceKey }).IsUnique();
-            avatar.HasIndex(value => new { value.Revision, value.SortOrder, value.Id });
-            avatar.ToTable(table => table.HasCheckConstraint(
-                "CK_AvatarDefinitions_Id_NonNegative",
-                "Id >= 0"));
-            avatar.ToTable(table => table.HasCheckConstraint(
-                "CK_AvatarDefinitions_PriceGold_NonNegative",
-                "PriceGold >= 0"));
-            avatar.HasOne(value => value.Version)
-                .WithMany(value => value.Avatars)
-                .HasForeignKey(value => value.Revision)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<WallpaperDefinition>(wallpaper =>
-        {
-            wallpaper.HasKey(value => new { value.Revision, value.Id });
-            wallpaper.Property(value => value.Name).HasMaxLength(64).IsRequired();
-            wallpaper.Property(value => value.ResourceKey).HasMaxLength(128).IsRequired();
-            wallpaper.Property(value => value.StartsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
-            wallpaper.Property(value => value.EndsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
-            wallpaper.HasIndex(value => new { value.Revision, value.ResourceKey }).IsUnique();
-            wallpaper.HasIndex(value => new { value.Revision, value.SortOrder, value.Id });
-            wallpaper.ToTable(table =>
-            {
-                table.HasCheckConstraint("CK_WallpaperDefinitions_Id_NonNegative", "Id >= 0");
-                table.HasCheckConstraint("CK_WallpaperDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
-            });
-            wallpaper.HasOne(value => value.Version)
-                .WithMany(value => value.Wallpapers)
-                .HasForeignKey(value => value.Revision)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<CardPackDefinition>(cardPack =>
-        {
-            cardPack.HasKey(value => new { value.Revision, value.Id });
-            cardPack.Property(value => value.Title).HasMaxLength(64).IsRequired();
-            cardPack.Property(value => value.CoverResourceKey).HasMaxLength(128).IsRequired();
-            cardPack.Property(value => value.PoolKey).HasMaxLength(32).IsRequired();
-            cardPack.Property(value => value.StartsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
-            cardPack.Property(value => value.EndsAt).HasConversion<DateTimeOffsetToBinaryConverter>();
-            cardPack.HasIndex(value => new { value.Revision, value.SortOrder, value.Id });
-            cardPack.ToTable(table =>
-            {
-                table.HasCheckConstraint("CK_CardPackDefinitions_Id_Positive", "Id > 0");
-                table.HasCheckConstraint("CK_CardPackDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
-            });
-            cardPack.HasOne(value => value.Version)
-                .WithMany(value => value.CardPacks)
-                .HasForeignKey(value => value.Revision)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<AllCard>(card =>
-        {
-            card.HasKey(value => value.CardId);
-            card.Property(value => value.CardId).HasMaxLength(32).IsRequired().ValueGeneratedNever();
-            card.Property(value => value.SourcePool).HasMaxLength(32).IsRequired();
-        });
-
-        modelBuilder.Entity<GachaPoolEntry>(entry =>
-        {
-            entry.HasKey(value => new { value.PoolKey, value.CardId });
-            entry.Property(value => value.PoolKey).HasMaxLength(32).IsRequired();
-            entry.Property(value => value.CardId).HasMaxLength(32).IsRequired();
-            entry.HasIndex(value => value.PoolKey);
-            entry.ToTable(table => table.HasCheckConstraint(
-                "CK_GachaPoolEntries_Weight_Positive",
-                "Weight > 0"));
-        });
-
-        modelBuilder.Entity<GachaRarityWeight>(weight =>
-        {
-            weight.HasKey(value => value.Rarity);
-            weight.Property(value => value.Rarity).ValueGeneratedNever();
-            weight.ToTable(table =>
-            {
-                table.HasCheckConstraint("CK_GachaRarityWeights_Rarity_Range", "Rarity >= 0 AND Rarity <= 4");
-                table.HasCheckConstraint("CK_GachaRarityWeights_Weight_Positive", "Weight > 0");
-            });
         });
 
         modelBuilder.Entity<ContentRelease>(release =>

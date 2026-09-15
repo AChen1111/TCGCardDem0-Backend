@@ -299,6 +299,15 @@ public sealed class LocalContentStorage : IContentStorage
                     actual));
             }
 
+            try
+            {
+                PublishedConfigReader.Parse(await File.ReadAllBytesAsync(
+                    ResolveWithin(extractRoot, AChen.Configuration.PublishedGameConfig.PackagePath), cancellationToken));
+            }
+            catch (Exception exception) when (exception is FormatException or JsonException or IOException or ArgumentException)
+            {
+                throw InvalidPackage("统一配置校验失败: " + exception.Message);
+            }
             var extractedManifest = ResolveWithin(extractRoot, "release-manifest.json");
             await ExtractEntryAsync(manifestEntry, extractedManifest, cancellationToken);
             return new ValidatedContentPackage(
@@ -360,6 +369,8 @@ public sealed class LocalContentStorage : IContentStorage
             throw InvalidPackage("归档文件与 release-manifest.json 声明不一致");
         }
 
+        if (manifest.ConfigPath != AChen.Configuration.PublishedGameConfig.PackagePath || !declared.ContainsKey(manifest.ConfigPath))
+            throw InvalidPackage("发布包必须包含 GameConfig/config.json");
         if (!manifest.HotUpdatePath.Equals("HybridCLR/HotUpdate.dll.bytes", StringComparison.Ordinal) ||
             !declared.ContainsKey(manifest.HotUpdatePath))
         {
@@ -386,9 +397,9 @@ public sealed class LocalContentStorage : IContentStorage
 
     private static void ValidateManifestIdentity(ContentRelease release, ReleasePackageManifest manifest)
     {
-        if (manifest.SchemaVersion != 1)
+        if (manifest.SchemaVersion != 2)
         {
-            throw InvalidPackage("目前仅支持 schemaVersion 1 的内容清单");
+            throw InvalidPackage("目前仅支持 schemaVersion 2 的内容清单");
         }
 
         if (!string.Equals(release.Platform, manifest.Platform, StringComparison.Ordinal) ||

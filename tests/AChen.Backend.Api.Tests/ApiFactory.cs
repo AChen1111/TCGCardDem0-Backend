@@ -10,16 +10,12 @@ namespace AChen.Backend.Api.Tests;
 
 public sealed class ApiFactory : WebApplicationFactory<Program>
 {
-    private readonly string? gameConfigGitRemoteUrl;
     private readonly string databasePath = Path.Combine(
         Path.GetTempPath(),
         $"achen-auth-{Guid.NewGuid():N}.db");
     private readonly string contentPath = Path.Combine(
         Path.GetTempPath(),
         $"achen-content-{Guid.NewGuid():N}");
-    private readonly string gameConfigGitPath = Path.Combine(
-        Path.GetTempPath(),
-        $"achen-game-config-git-{Guid.NewGuid():N}");
 
     public const string PublishKey = "integration-test-content-publish-key-32-characters";
 
@@ -29,10 +25,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     {
     }
 
-    internal ApiFactory(string gameConfigGitRemoteUrl)
-    {
-        this.gameConfigGitRemoteUrl = gameConfigGitRemoteUrl;
-    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -48,9 +40,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
                 ["ContentDelivery:StorageRoot"] = contentPath,
                 ["ContentDelivery:PublishKey"] = PublishKey,
                 ["ContentDelivery:MaxArchiveBytes"] = (10L * 1024 * 1024).ToString(),
-                ["ContentDelivery:MaxExpandedBytes"] = (20L * 1024 * 1024).ToString(),
-                ["GameConfigGit:RepositoryRoot"] = gameConfigGitPath,
-                ["GameConfigGit:RemoteUrl"] = gameConfigGitRemoteUrl ?? ""
+                ["ContentDelivery:MaxExpandedBytes"] = (20L * 1024 * 1024).ToString()
             });
         });
         builder.ConfigureTestServices(services =>
@@ -83,10 +73,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             DeleteTemporaryDirectory(contentPath);
         }
 
-        if (disposing && Directory.Exists(gameConfigGitPath))
-        {
-            DeleteTemporaryDirectory(gameConfigGitPath);
-        }
     }
 
     private static void DeleteTemporaryDirectory(string path)

@@ -5,7 +5,6 @@ using AChen.Backend.Api.Features.AccountManagement;
 using AChen.Backend.Api.Features.Auth;
 using AChen.Backend.Api.Features.ContentDelivery;
 using AChen.Backend.Api.Features.Gacha;
-using AChen.Backend.Api.Features.GameConfig;
 using AChen.Backend.Api.Features.Players;
 using AChen.Backend.Api.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
@@ -69,13 +68,6 @@ builder.Services.AddOptions<ContentDeliveryOptions>()
     .Validate(options => options.MaxFileCount is >= 1 and <= 100_000, "ContentDelivery:MaxFileCount must be between 1 and 100000.")
     .Validate(options => options.AllowedChannels.Length > 0 && options.AllowedChannels.All(value => !string.IsNullOrWhiteSpace(value)), "ContentDelivery:AllowedChannels must not be empty.")
     .ValidateOnStart();
-builder.Services.AddOptions<GameConfigGitOptions>()
-    .BindConfiguration(GameConfigGitOptions.SectionName)
-    .Validate(options => !string.IsNullOrWhiteSpace(options.RepositoryRoot), "GameConfigGit:RepositoryRoot is required.")
-    .Validate(options => !string.IsNullOrWhiteSpace(options.Branch), "GameConfigGit:Branch is required.")
-    .Validate(options => !string.IsNullOrWhiteSpace(options.RemoteName), "GameConfigGit:RemoteName is required.")
-    .Validate(options => options.HistoryLimit is >= 1 and <= 100, "GameConfigGit:HistoryLimit must be between 1 and 100.")
-    .ValidateOnStart();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<TokenService>();
@@ -84,13 +76,9 @@ builder.Services.AddScoped<AccountManagementService>();
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddSingleton<IGachaRandom, CryptoGachaRandom>();
-builder.Services.AddSingleton<GachaCsvSerializer>();
-builder.Services.AddSingleton<AllCardCsvSerializer>();
 builder.Services.AddScoped<GachaService>();
-builder.Services.AddScoped<IGameConfigRepository, GameConfigRepository>();
-builder.Services.AddScoped<GameConfigService>();
-builder.Services.AddSingleton<GameConfigCsvSerializer>();
-builder.Services.AddScoped<GameConfigGitService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<PublishedConfigReader>();
 builder.Services.AddScoped<IContentReleaseRepository, ContentReleaseRepository>();
 builder.Services.AddScoped<ContentReleaseService>();
 builder.Services.AddSingleton<IContentStorage, LocalContentStorage>();
@@ -217,15 +205,6 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0,
             AutoReplenishment = true
         }));
-    options.AddPolicy("game-config", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 120,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0,
-            AutoReplenishment = true
-        }));
     options.AddPolicy("content-upload", context => RateLimitPartition.GetConcurrencyLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new ConcurrencyLimiterOptions
@@ -293,9 +272,7 @@ app.MapGet("/ready", async (AppDbContext db, CancellationToken cancellationToken
         : Results.StatusCode(StatusCodes.Status503ServiceUnavailable));
 app.MapAuthEndpoints();
 app.MapPlayerEndpoints();
-app.MapGachaEndpoints();
 app.MapAccountManagementEndpoints();
-app.MapGameConfigEndpoints();
 app.MapContentEndpoints();
 app.MapRazorPages();
 

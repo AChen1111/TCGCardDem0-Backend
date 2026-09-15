@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AChen.Backend.Api.Data;
-using AChen.Backend.Api.Features.GameConfig;
+using AChen.Configuration;
 using AChen.Backend.Api.Features.Players;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +12,8 @@ namespace AChen.Backend.Api.Tests;
 
 public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
+    private readonly PublishedConfigFixture config = new(factory);
+
     [Fact]
     public async Task Bootstrap_requires_access_token()
     {
@@ -106,25 +108,6 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
         await AssertErrorCodeAsync(response, "WALLPAPER_NOT_OWNED");
-    }
-
-    [Fact]
-    public async Task Granting_avatar_adds_it_to_owned_list_without_equipping()
-    {
-        const int avatarId = 4004;
-        await EnsurePublishedAvatarAsync(avatarId);
-        using var client = await CreateAuthenticatedClientAsync("GrantAvatar");
-        var initial = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
-        Assert.NotNull(initial);
-
-        var granted = await GrantAvatarAsync(initial.Id, avatarId);
-        Assert.Equal(0, granted.AvatarId);
-        Assert.Equal(new[] { 0, avatarId }, granted.OwnedAvatarIds);
-        Assert.Equal(1, granted.Revision);
-
-        var again = await GrantAvatarAsync(initial.Id, avatarId);
-        Assert.Equal(new[] { 0, avatarId }, again.OwnedAvatarIds);
-        Assert.Equal(1, again.Revision);
     }
 
     [Fact]
@@ -429,7 +412,9 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
 
     private async Task<HttpClient> CreateAuthenticatedClientAsync(string username)
     {
+        if (config.ReleaseId is null) await config.PublishAsync();
         var client = factory.CreateClient();
+        config.Attach(client);
         var response = await client.PostAsJsonAsync("/api/auth/register", new
         {
             username,
@@ -445,49 +430,30 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     private async Task<PlayerPayload> GrantAvatarAsync(Guid userId, int avatarId)
     {
         await using var scope = factory.Services.CreateAsyncScope();
-        var service = scope.ServiceProvider.GetRequiredService<PlayerService>();
-        var player = await service.GrantAvatarAsync(userId, avatarId, CancellationToken.None);
-        return new PlayerPayload(
-            player.Id,
-            player.Nickname,
-            player.AvatarId,
-            player.OwnedAvatarIds,
-            player.BackgroundId,
-            player.OwnedBackgroundIds,
-            player.OwnedCards,
-            player.Gold,
-            player.Revision);
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var player = await db.PlayerProfiles.SingleAsync(x => x.UserId == userId);
+        if (!player.OwnedAvatarIds.Contains(avatarId))
+        {
+            player.OwnedAvatarIds = player.OwnedAvatarIds.Append(avatarId).ToList();
+            player.Revision++;
+            await db.SaveChangesAsync();
+        }
+        return new PlayerPayload(player.UserId, player.Nickname, player.AvatarId, player.OwnedAvatarIds,
+            player.BackgroundId, player.OwnedBackgroundIds, player.OwnedCards, player.Gold, player.Revision);
     }
 
     private async Task EnsurePublishedAvatarAsync(int id, long priceGold = 0)
     {
-        await using var scope = factory.Services.CreateAsyncScope();
-        var service = scope.ServiceProvider.GetRequiredService<GameConfigService>();
-        var admin = await service.GetAdminAsync(CancellationToken.None);
-        await service.UpsertAvatarAsync(
-            new AvatarDefinitionInput(
-                id,
-                $"Avatar {id}",
-                $"Avatar_{id}",
-                priceGold,
-                id,
-                true,
-                admin.EditRevision),
-            CancellationToken.None);
-        admin = await service.GetAdminAsync(CancellationToken.None);
-        await service.PublishAsync(admin.EditRevision, CancellationToken.None);
+        config.Data.Catalog.Avatars = config.Data.Catalog.Avatars.Where(x => x.Id != id).Append(
+            new CosmeticData { Id = id, Name = "Avatar " + id, ResourceKey = "Avatar_" + id, PriceGold = priceGold, IsEnabled = true }).ToArray();
+        await config.PublishAsync();
     }
 
     private async Task EnsurePublishedWallpaperAsync(int id, long priceGold = 0)
     {
-        await using var scope = factory.Services.CreateAsyncScope();
-        var service = scope.ServiceProvider.GetRequiredService<GameConfigService>();
-        var admin = await service.GetAdminAsync(CancellationToken.None);
-        await service.UpsertWallpaperAsync(
-            new WallpaperDefinitionInput(id, $"Wallpaper {id}", $"Wallpaper_{id}", priceGold, id, true, admin.EditRevision),
-            CancellationToken.None);
-        admin = await service.GetAdminAsync(CancellationToken.None);
-        await service.PublishAsync(admin.EditRevision, CancellationToken.None);
+        config.Data.Catalog.Wallpapers = config.Data.Catalog.Wallpapers.Where(x => x.Id != id).Append(
+            new CosmeticData { Id = id, Name = "Wallpaper " + id, ResourceKey = "Wallpaper_" + id, PriceGold = priceGold, IsEnabled = true }).ToArray();
+        await config.PublishAsync();
     }
 
     private async Task SetGoldAsync(Guid userId, long gold)
@@ -501,22 +467,8 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
 
     private async Task SetAvatarEnabledAndPublishAsync(int id, bool isEnabled)
     {
-        await using var scope = factory.Services.CreateAsyncScope();
-        var service = scope.ServiceProvider.GetRequiredService<GameConfigService>();
-        var admin = await service.GetAdminAsync(CancellationToken.None);
-        var avatar = admin.Avatars.Single(value => value.Id == id);
-        await service.UpsertAvatarAsync(
-            new AvatarDefinitionInput(
-                avatar.Id,
-                avatar.Name,
-                avatar.ResourceKey,
-                avatar.PriceGold,
-                avatar.SortOrder,
-                isEnabled,
-                admin.EditRevision),
-            CancellationToken.None);
-        admin = await service.GetAdminAsync(CancellationToken.None);
-        await service.PublishAsync(admin.EditRevision, CancellationToken.None);
+        config.Data.Catalog.Avatars.Single(x => x.Id == id).IsEnabled = isEnabled;
+        await config.PublishAsync();
     }
 
     private static async Task AssertErrorCodeAsync(HttpResponseMessage response, string expectedCode)

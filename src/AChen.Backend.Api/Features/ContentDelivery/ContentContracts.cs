@@ -74,7 +74,9 @@ public sealed record LatestContentManifestResponse(
     string ContentVersion,
     DateTimeOffset PublishedAt,
     HotUpdateArtifactResponse HotUpdate,
-    AddressablesArtifactResponse Addressables);
+    AddressablesArtifactResponse Addressables,
+    HotUpdateArtifactResponse Config,
+    DateTimeOffset ServerTime);
 
 public sealed record HotUpdateArtifactResponse(string Path, long Size, string Sha256);
 
@@ -91,6 +93,7 @@ public sealed record ReleasePackageManifest(
     string HotUpdatePath,
     string CatalogPath,
     string CatalogHashPath,
-    IReadOnlyList<ReleasePackageFile> Files);
+    IReadOnlyList<ReleasePackageFile> Files,
+    string ConfigPath = "GameConfig/config.json");
 
 public sealed record ReleasePackageFile(string Path, long Size, string Sha256);

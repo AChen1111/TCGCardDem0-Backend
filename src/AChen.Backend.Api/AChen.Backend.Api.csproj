@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>AChen.Backend.Api-b0cf17ad-6c41-4f24-bb16-d7f846b304d6</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.23" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.23">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.23" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../Assets/Shared/Configuration/PublishedGameConfig.cs" Link="Shared/PublishedGameConfig.cs" />
+    <Compile Include="../../../Assets/Shared/Card/Generated/CardRow.cs" Link="Shared/CardRow.cs" />
+    <Compile Include="../../../Assets/Shared/Localization/Generated/TranslationRow.cs" Link="Shared/TranslationRow.cs" />
+  </ItemGroup>
+</Project>

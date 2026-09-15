@@ -38,6 +38,10 @@ public sealed class GameConfigMigrationTests
                 Assert.Null(profiles.Single(value => value.Nickname == "legacy").AvatarId);
                 Assert.Equal(42, profiles.Single(value => value.Nickname == "numeric").AvatarId);
                 Assert.All(profiles, profile => Assert.Equal(new[] { 1 }, profile.OwnedBackgroundIds));
+                await db.Database.OpenConnectionAsync();
+                using var command = db.Database.GetDbConnection().CreateCommand();
+                command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('GameConfigVersions', 'AvatarDefinitions', 'WallpaperDefinitions', 'CardPackDefinitions', 'AllCards', 'GachaPoolEntries', 'GachaRarityWeights')";
+                Assert.Equal(0L, Convert.ToInt64(await command.ExecuteScalarAsync()));
             }
         }
         finally

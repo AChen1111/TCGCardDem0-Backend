@@ -1,13 +1,13 @@
 using AChen.Backend.Api.Infrastructure;
 using AChen.Backend.Api.Features.Gacha;
-using AChen.Backend.Api.Features.GameConfig;
+using AChen.Backend.Api.Features.ContentDelivery;
 using Microsoft.EntityFrameworkCore;
 
 namespace AChen.Backend.Api.Features.Players;
 
 public sealed class PlayerService(
     IPlayerRepository repository,
-    GameConfigService gameConfigService,
+    PublishedConfigReader configReader,
     GachaService gachaService,
     TimeProvider timeProvider,
     ILogger<PlayerService> logger)
@@ -80,46 +80,6 @@ public sealed class PlayerService(
         return ToResponse(profile);
     }
 
-    public async Task<PlayerResponse> GrantAvatarAsync(
-        Guid userId,
-        int avatarId,
-        CancellationToken cancellationToken)
-    {
-        if (avatarId < 0)
-        {
-            throw new PlayerValidationException(new Dictionary<string, string[]>
-            {
-                ["avatarId"] = ["头像 ID 不能为负数"]
-            });
-        }
-
-        await EnsureAvatarAvailableAsync(avatarId, cancellationToken);
-        var profile = await GetRequiredAsync(userId, cancellationToken);
-        if (profile.OwnedAvatarIds.Contains(avatarId))
-        {
-            return ToResponse(profile);
-        }
-
-        profile.OwnedAvatarIds = profile.OwnedAvatarIds.Append(avatarId).OrderBy(value => value).ToList();
-        profile.Revision++;
-        profile.UpdatedAt = timeProvider.GetUtcNow();
-        try
-        {
-            await repository.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            throw Changed();
-        }
-
-        logger.LogInformation(
-            "Granted avatar {AvatarId} to player {UserId} at revision {Revision}.",
-            avatarId,
-            userId,
-            profile.Revision);
-        return ToResponse(profile);
-    }
-
     public async Task<PlayerResponse> PurchaseShopItemAsync(
         Guid userId,
         PurchaseShopItemRequest request,
@@ -132,7 +92,7 @@ public sealed class PlayerService(
         }
 
         var catalogType = request.CatalogType.Trim();
-        var published = await gameConfigService.GetPublishedAsync(cancellationToken);
+        var published = (await configReader.GetAsync(cancellationToken)).Catalog;
         var now = timeProvider.GetUtcNow();
         long priceGold;
         if (catalogType == ShopCatalogTypes.Avatar)
@@ -209,12 +169,13 @@ public sealed class PlayerService(
         }
 
         logger.LogInformation(
-            "Player {UserId} purchased {CatalogType} {ItemId} for {PriceGold} gold at revision {Revision}.",
+            "Player {UserId} purchased {CatalogType} {ItemId} for {PriceGold} gold at revision {Revision}; content {ContentRelease}.",
             userId,
             catalogType,
             request.ItemId,
             priceGold,
-            profile.Revision);
+            profile.Revision,
+            configReader.ReleaseId);
         return ToResponse(profile);
     }
 
@@ -237,7 +198,7 @@ public sealed class PlayerService(
                 "一次抽取数量须为 1-10");
         }
 
-        var published = await gameConfigService.GetPublishedAsync(cancellationToken);
+        var published = (await configReader.GetAsync(cancellationToken)).Catalog;
         var now = timeProvider.GetUtcNow();
         var pack = published.CardPacks.FirstOrDefault(value => value.Id == request.PackId);
         if (pack is null || !IsOnSale(pack.IsEnabled, pack.StartsAt, pack.EndsAt, now))
@@ -286,13 +247,14 @@ public sealed class PlayerService(
         }
 
         logger.LogInformation(
-            "Player {UserId} drew {Count} cards from pack {PackId} pool {PoolKey} for {PriceGold} gold at revision {Revision}.",
+            "Player {UserId} drew {Count} cards from pack {PackId} pool {PoolKey} for {PriceGold} gold at revision {Revision}; content {ContentRelease}.",
             userId,
             request.Count,
             pack.Id,
             pack.PoolKey,
             pack.PriceGold,
-            profile.Revision);
+            profile.Revision,
+            configReader.ReleaseId);
         return new DrawCardsResponse(
             draws.Select(value => new CardDrawResultResponse(value.CardId, value.Rarity, value.SourcePool)).ToArray(),
             ToResponse(profile));
@@ -300,7 +262,7 @@ public sealed class PlayerService(
 
     private async Task EnsureAvatarAvailableAsync(int avatarId, CancellationToken cancellationToken)
     {
-        if (!await gameConfigService.IsAvatarAvailableAsync(avatarId, cancellationToken))
+        if (!(await configReader.GetAsync(cancellationToken)).Catalog.Avatars.Any(x => x.Id == avatarId && IsOnSale(x.IsEnabled, x.StartsAt, x.EndsAt, timeProvider.GetUtcNow())))
         {
             throw new ApiException(
                 StatusCodes.Status422UnprocessableEntity,
@@ -311,7 +273,7 @@ public sealed class PlayerService(
 
     private async Task EnsureWallpaperAvailableAsync(int wallpaperId, CancellationToken cancellationToken)
     {
-        if (!await gameConfigService.IsWallpaperAvailableAsync(wallpaperId, cancellationToken))
+        if (!(await configReader.GetAsync(cancellationToken)).Catalog.Wallpapers.Any(x => x.Id == wallpaperId && IsOnSale(x.IsEnabled, x.StartsAt, x.EndsAt, timeProvider.GetUtcNow())))
         {
             throw new ApiException(
                 StatusCodes.Status422UnprocessableEntity,

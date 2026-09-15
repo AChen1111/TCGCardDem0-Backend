@@ -304,6 +304,7 @@ public sealed class ContentDeliveryEndpointsTests(ApiFactory factory) : IClassFi
     {
         var files = new Dictionary<string, byte[]>
         {
+            ["GameConfig/config.json"] = PublishedConfigFixture.SourceBytes(),
             ["HybridCLR/HotUpdate.dll.bytes"] = [1, 2, 3, 4, 5],
             ["Addressables/catalog_0.1.0.bin"] = [6, 7, 8],
             ["Addressables/catalog_0.1.0.hash"] = Encoding.UTF8.GetBytes("catalog-hash"),
@@ -311,7 +312,8 @@ public sealed class ContentDeliveryEndpointsTests(ApiFactory factory) : IClassFi
         };
         var manifest = new
         {
-            schemaVersion = 1,
+            schemaVersion = 2,
+            configPath = "GameConfig/config.json",
             platform,
             appVersion,
             contentVersion,

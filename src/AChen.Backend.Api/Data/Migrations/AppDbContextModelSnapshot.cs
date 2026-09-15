@@ -275,217 +275,12 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.ToTable("ContentReleaseFiles");
                 });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.AvatarDefinition", b =>
-                {
-                    b.Property<long>("Revision")
-                        .HasColumnType("INTEGER");
 
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
 
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset?>("StartsAt")
-                        .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset?>("EndsAt")
-                        .HasColumnType("INTEGER");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
 
-                    b.Property<string>("ResourceKey")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("PriceGold")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Revision", "Id");
-
-                    b.HasIndex("Revision", "ResourceKey")
-                        .IsUnique();
-
-                    b.HasIndex("Revision", "SortOrder", "Id");
-
-                    b.ToTable("AvatarDefinitions", t =>
-                        {
-                            t.HasCheckConstraint("CK_AvatarDefinitions_Id_NonNegative", "Id >= 0");
-
-                            t.HasCheckConstraint("CK_AvatarDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.WallpaperDefinition", b =>
-                {
-                    b.Property<long>("Revision").HasColumnType("INTEGER");
-                    b.Property<int>("Id").HasColumnType("INTEGER");
-                    b.Property<bool>("IsEnabled").HasColumnType("INTEGER");
-                    b.Property<DateTimeOffset?>("StartsAt").HasColumnType("INTEGER");
-                    b.Property<DateTimeOffset?>("EndsAt").HasColumnType("INTEGER");
-                    b.Property<string>("Name").IsRequired().HasMaxLength(64).HasColumnType("TEXT");
-                    b.Property<long>("PriceGold").HasColumnType("INTEGER");
-                    b.Property<string>("ResourceKey").IsRequired().HasMaxLength(128).HasColumnType("TEXT");
-                    b.Property<int>("SortOrder").HasColumnType("INTEGER");
-                    b.HasKey("Revision", "Id");
-                    b.HasIndex("Revision", "ResourceKey").IsUnique();
-                    b.HasIndex("Revision", "SortOrder", "Id");
-                    b.ToTable("WallpaperDefinitions", t =>
-                        {
-                            t.HasCheckConstraint("CK_WallpaperDefinitions_Id_NonNegative", "Id >= 0");
-                            t.HasCheckConstraint("CK_WallpaperDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.CardPackDefinition", b =>
-                {
-                    b.Property<long>("Revision")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("CoverResourceKey")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PoolKey")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("EndsAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("PriceGold")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long?>("StartsAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Revision", "Id");
-
-                    b.HasIndex("Revision", "SortOrder", "Id");
-
-                    b.ToTable("CardPackDefinitions", t =>
-                        {
-                            t.HasCheckConstraint("CK_CardPackDefinitions_Id_Positive", "Id > 0");
-
-                            t.HasCheckConstraint("CK_CardPackDefinitions_PriceGold_NonNegative", "PriceGold >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.Gacha.AllCard", b =>
-                {
-                    b.Property<string>("CardId")
-                        .ValueGeneratedNever()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SourcePool")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("CardId");
-
-                    b.ToTable("AllCards");
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.Gacha.GachaPoolEntry", b =>
-                {
-                    b.Property<string>("PoolKey")
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CardId")
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Weight")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("PoolKey", "CardId");
-
-                    b.HasIndex("PoolKey");
-
-                    b.ToTable("GachaPoolEntries", t =>
-                        {
-                            t.HasCheckConstraint("CK_GachaPoolEntries_Weight_Positive", "Weight > 0");
-                        });
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.Gacha.GachaRarityWeight", b =>
-                {
-                    b.Property<int>("Rarity")
-                        .ValueGeneratedNever()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Weight")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Rarity");
-
-                    b.ToTable("GachaRarityWeights", t =>
-                        {
-                            t.HasCheckConstraint("CK_GachaRarityWeights_Rarity_Range", "Rarity >= 0 AND Rarity <= 4");
-                            t.HasCheckConstraint("CK_GachaRarityWeights_Weight_Positive", "Weight > 0");
-                        });
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", b =>
-                {
-                    b.Property<long>("Revision")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("EditRevision")
-                        .IsConcurrencyToken()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long?>("PublishedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("UpdatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Revision");
-
-                    b.HasIndex("State")
-                        .IsUnique()
-                        .HasFilter("\"State\" = 'Draft'");
-
-                    b.ToTable("GameConfigVersions", t =>
-                        {
-                            t.HasCheckConstraint("CK_GameConfigVersions_EditRevision_NonNegative", "EditRevision >= 0");
-                        });
-                });
 
             modelBuilder.Entity("AChen.Backend.Api.Features.Players.PlayerProfile", b =>
                 {
@@ -587,38 +382,8 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.Navigation("Release");
                 });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.AvatarDefinition", b =>
-                {
-                    b.HasOne("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", "Version")
-                        .WithMany("Avatars")
-                        .HasForeignKey("Revision")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
-                    b.Navigation("Version");
-                });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.CardPackDefinition", b =>
-                {
-                    b.HasOne("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", "Version")
-                        .WithMany("CardPacks")
-                        .HasForeignKey("Revision")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Version");
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.WallpaperDefinition", b =>
-                {
-                    b.HasOne("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", "Version")
-                        .WithMany("Wallpapers")
-                        .HasForeignKey("Revision")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Version");
-                });
 
             modelBuilder.Entity("AChen.Backend.Api.Features.Players.PlayerProfile", b =>
                 {
@@ -643,14 +408,6 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.Navigation("Files");
                 });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.GameConfig.GameConfigVersion", b =>
-                {
-                    b.Navigation("Avatars");
-
-                    b.Navigation("CardPacks");
-
-                    b.Navigation("Wallpapers");
-                });
 #pragma warning restore 612, 618
         }
     }

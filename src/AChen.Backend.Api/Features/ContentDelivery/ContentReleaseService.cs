@@ -11,7 +11,8 @@ public sealed class ContentReleaseService(
     ContentReleaseLockProvider lockProvider,
     IOptions<ContentDeliveryOptions> options,
     TimeProvider timeProvider,
-    ILogger<ContentReleaseService> logger)
+    ILogger<ContentReleaseService> logger,
+    PublishedConfigReader configReader)
 {
     private readonly ContentDeliveryOptions options = options.Value;
 
@@ -254,6 +255,7 @@ public sealed class ContentReleaseService(
                 "内容版本的平台和应用版本必须与活动目标一致");
         }
 
+        await configReader.ReadReleaseAsync(release, cancellationToken);
         var now = timeProvider.GetUtcNow();
         var active = await repository.SetActiveAsync(
             channel,
@@ -314,10 +316,12 @@ public sealed class ContentReleaseService(
             throw NotFound("CONTENT_RELEASE_NOT_FOUND", "活动内容版本不可用");
         }
 
+        var config = release.Files.SingleOrDefault(value => value.RelativePath == AChen.Configuration.PublishedGameConfig.PackagePath)
+            ?? throw NotFound("CONTENT_NOT_READY", "活动版本缺少配置，请重新发布");
         var hotUpdate = release.Files.Single(value => value.RelativePath == release.HotUpdatePath);
         var releaseBase = $"/content/releases/{release.Id:D}";
         return new LatestContentManifestResponse(
-            1,
+            2,
             release.Id,
             active.Channel,
             active.Platform,
@@ -331,7 +335,9 @@ public sealed class ContentReleaseService(
             new AddressablesArtifactResponse(
                 $"{releaseBase}/Addressables",
                 BuildContentPath(releaseBase, release.CatalogPath),
-                BuildContentPath(releaseBase, release.CatalogHashPath)));
+                BuildContentPath(releaseBase, release.CatalogHashPath)),
+            new HotUpdateArtifactResponse(BuildContentPath(releaseBase, config.RelativePath), config.Size, config.Sha256),
+            timeProvider.GetUtcNow());
     }
 
     public async Task<ContentPublicationPageResponse> ListPublicationsAsync(
