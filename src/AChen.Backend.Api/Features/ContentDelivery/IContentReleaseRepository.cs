@@ -22,6 +22,7 @@ public interface IContentReleaseRepository
         string appVersion,
         bool includeRelease,
         CancellationToken cancellationToken);
+    Task<ActiveContentRelease?> FindReadyActiveAsync(bool includeRelease, CancellationToken cancellationToken);
     Task<ActiveContentRelease> SetActiveAsync(
         string channel,
         string platform,

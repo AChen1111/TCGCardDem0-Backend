@@ -2,6 +2,7 @@ using System.Text.Json;
 using AChen.Backend.Api.Features.Auth;
 using AChen.Backend.Api.Features.ContentDelivery;
 using AChen.Backend.Api.Features.Players;
+using AChen.Backend.Api.Features.Social;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -17,6 +18,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<ContentReleaseFile> ContentReleaseFiles => Set<ContentReleaseFile>();
     public DbSet<ActiveContentRelease> ActiveContentReleases => Set<ActiveContentRelease>();
     public DbSet<ContentPublication> ContentPublications => Set<ContentPublication>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
+    public DbSet<Gift> Gifts => Set<Gift>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -157,6 +161,38 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(value => value.PreviousReleaseId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Friendship>(friendship =>
+        {
+            friendship.HasKey(value => new { value.UserIdA, value.UserIdB });
+            friendship.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+        });
+
+        modelBuilder.Entity<FriendRequest>(request =>
+        {
+            request.HasKey(value => value.Id);
+            request.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            request.Property(value => value.UpdatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            request.HasIndex(value => new { value.ToUserId, value.Status });
+            request.HasIndex(value => new { value.FromUserId, value.ToUserId });
+        });
+
+        modelBuilder.Entity<Gift>(gift =>
+        {
+            gift.HasKey(value => value.Id);
+            gift.Property(value => value.Cards)
+                .HasConversion(
+                    value => JsonSerializer.Serialize(value, JsonSerializerOptions.Default),
+                    value => JsonSerializer.Deserialize<List<OwnedCard>>(value, JsonSerializerOptions.Default) ?? new List<OwnedCard>(),
+                    new ValueComparer<List<OwnedCard>>(
+                        (left, right) => left != null && right != null && left.SequenceEqual(right),
+                        value => value.Aggregate(0, (hash, card) => HashCode.Combine(hash, card.CardId, card.Rarity, card.Count)),
+                        value => value.ToList()))
+                .HasColumnType("TEXT");
+            gift.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            gift.Property(value => value.ClaimedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            gift.HasIndex(value => new { value.TargetUserId, value.Claimed });
         });
     }
 }

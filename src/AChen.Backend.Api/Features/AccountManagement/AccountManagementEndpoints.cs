@@ -1,4 +1,5 @@
 using AChen.Backend.Api.Features.ContentDelivery;
+using AChen.Backend.Api.Features.Social;
 using AChen.Backend.Api.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,6 +23,8 @@ public static class AccountManagementEndpoints
         admin.MapGet("/gold", GetGoldAsync);
         admin.MapGet("/player", GetPlayerAsync);
         admin.MapPost("/gold", AddGoldAsync)
+            .WithMetadata(new RequestSizeLimitAttribute(RequestLimit));
+        admin.MapPost("/gifts", GrantGiftAsync)
             .WithMetadata(new RequestSizeLimitAttribute(RequestLimit));
         return endpoints;
     }
@@ -59,4 +62,10 @@ public static class AccountManagementEndpoints
         AccountManagementService service,
         CancellationToken cancellationToken) =>
         Results.Ok(await service.AddGoldByUsernameAsync(request, cancellationToken));
+
+    private static async Task<IResult> GrantGiftAsync(
+        AdminGrantGiftRequest request,
+        SocialService service,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await service.GrantGiftByUsernameAsync(request, cancellationToken));
 }

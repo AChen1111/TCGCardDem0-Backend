@@ -34,25 +34,24 @@ public sealed class PublishedConfigEndpointsTests(ApiFactory factory) : IClassFi
     }
 
     [Fact]
-    public async Task Old_release_cannot_charge_or_grant_cards()
+    public async Task Stale_or_missing_release_header_still_draws_from_active_config()
     {
         var config = new PublishedConfigFixture(factory);
         await config.PublishAsync();
         using var player = await PlayerAsync(config);
         await config.PublishAsync(updateClients: false);
-        var pack = config.Data.Catalog.CardPacks.First();
+        player.DefaultRequestHeaders.Remove("X-Content-Release");
+        var pack = config.Data.Catalog.CardPacks.First(x => x.IsEnabled);
         var response = await player.PostAsJsonAsync("/api/player/card-draws", new
         { packId = pack.Id, poolKey = pack.PoolKey, count = 1, expectedRevision = 0 });
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        using var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal("CONTENT_UPDATE_REQUIRED", error.RootElement.GetProperty("code").GetString());
+        response.EnsureSuccessStatusCode();
         using var state = JsonDocument.Parse(await player.GetStringAsync("/api/player/bootstrap"));
-        Assert.Equal(10000, state.RootElement.GetProperty("gold").GetInt64());
-        Assert.Equal(0, state.RootElement.GetProperty("ownedCards").GetArrayLength());
+        Assert.Equal(10000 - pack.PriceGold, state.RootElement.GetProperty("gold").GetInt64());
+        Assert.Equal(1, state.RootElement.GetProperty("ownedCards").GetArrayLength());
     }
 
     [Fact]
-    public async Task Missing_content_context_cannot_purchase()
+    public async Task Missing_content_context_can_purchase()
     {
         var config = new PublishedConfigFixture(factory);
         await config.PublishAsync();
@@ -60,7 +59,7 @@ public sealed class PublishedConfigEndpointsTests(ApiFactory factory) : IClassFi
         player.DefaultRequestHeaders.Remove("X-Content-Release");
         var response = await player.PostAsJsonAsync("/api/player/purchase", new
         { catalogType = "avatar", itemId = 2, expectedRevision = 0 });
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        response.EnsureSuccessStatusCode();
     }
 
     [Fact]

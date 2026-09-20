@@ -85,6 +85,20 @@ public sealed class ContentReleaseRepository(AppDbContext db) : IContentReleaseR
             cancellationToken);
     }
 
+    public Task<ActiveContentRelease?> FindReadyActiveAsync(bool includeRelease, CancellationToken cancellationToken)
+    {
+        IQueryable<ActiveContentRelease> query = db.ActiveContentReleases.Include(value => value.Release);
+        if (includeRelease)
+        {
+            query = query.Include(value => value.Release).ThenInclude(value => value.Files);
+        }
+
+        return query
+            .Where(value => value.Release.State == ContentReleaseState.Ready)
+            .OrderByDescending(value => value.UpdatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<ActiveContentRelease> SetActiveAsync(
         string channel,
         string platform,

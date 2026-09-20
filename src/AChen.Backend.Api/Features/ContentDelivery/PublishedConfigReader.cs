@@ -22,20 +22,23 @@ public sealed class PublishedConfigReader(
         var channel = headers?["X-Content-Channel"].ToString() ?? "";
         var platform = headers?["X-Content-Platform"].ToString() ?? "";
         var appVersion = headers?["X-Content-App-Version"].ToString() ?? "";
-        if (!Guid.TryParse(headers?["X-Content-Release"].ToString(), out var releaseId)
-            || string.IsNullOrWhiteSpace(channel) || string.IsNullOrWhiteSpace(platform) || string.IsNullOrWhiteSpace(appVersion))
-            throw new ApiException(409, "CONTENT_UPDATE_REQUIRED", "客户端内容版本缺失，请更新并重启游戏");
-        var active = await repository.GetActiveAsync(channel, platform, appVersion, true, token);
+        ActiveContentRelease? active = null;
+        if (!string.IsNullOrWhiteSpace(channel)
+            && !string.IsNullOrWhiteSpace(platform)
+            && !string.IsNullOrWhiteSpace(appVersion))
+        {
+            active = await repository.GetActiveAsync(channel, platform, appVersion, true, token);
+        }
+
+        if (active is null || active.Release.State != ContentReleaseState.Ready)
+        {
+            active = await repository.FindReadyActiveAsync(true, token);
+        }
+
         if (active is null || active.Release.State != ContentReleaseState.Ready)
             throw new ApiException(503, "CONTENT_NOT_READY", "尚未发布可用游戏配置");
-        if (active.ReleaseId != releaseId)
-        {
-            logger.LogWarning("Rejected stale configuration {ReleaseId}; active {ActiveReleaseId} for {Channel}/{Platform}/{AppVersion}.",
-                releaseId, active.ReleaseId, channel, platform, appVersion);
-            throw new ApiException(409, "CONTENT_UPDATE_REQUIRED", "游戏内容已更新，请重启游戏");
-        }
         snapshot = await ReadReleaseAsync(active.Release, token);
-        ReleaseId = releaseId;
+        ReleaseId = active.ReleaseId;
         return snapshot;
     }
 

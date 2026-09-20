@@ -331,6 +331,90 @@ namespace AChen.Backend.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("AChen.Backend.Api.Features.Social.Friendship", b =>
+                {
+                    b.Property<Guid>("UserIdA")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserIdB")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("UserIdA", "UserIdB");
+
+                    b.ToTable("Friendships");
+                });
+
+            modelBuilder.Entity("AChen.Backend.Api.Features.Social.FriendRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("FromUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("ToUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromUserId", "ToUserId");
+
+                    b.HasIndex("ToUserId", "Status");
+
+                    b.ToTable("FriendRequests");
+                });
+
+            modelBuilder.Entity("AChen.Backend.Api.Features.Social.Gift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Cards")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Claimed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("ClaimedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Gold")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("SourceUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TargetUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TitleKey")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetUserId", "Claimed");
+
+                    b.ToTable("Gifts");
+                });
+
             modelBuilder.Entity("AChen.Backend.Api.Features.Auth.RefreshSession", b =>
                 {
                     b.HasOne("AChen.Backend.Api.Features.Auth.User", "User")
