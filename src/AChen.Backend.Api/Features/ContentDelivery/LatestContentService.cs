@@ -38,11 +38,15 @@ public sealed class LatestContentService(AppDbContext db, IOptions<ContentDelive
         var path = Path.GetFullPath(Path.Combine(root, relative));
         if (!path.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
             throw Error(422, "INVALID_CONTENT_PACKAGE", "内容路径超出目录");
+        for (string? directory = path; directory != null && directory.Length >= root.Length; directory = Path.GetDirectoryName(directory))
+            if ((Directory.Exists(directory) || File.Exists(directory)) && (File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("内容路径包含链接, 拒绝操作: " + relative);
         return path;
     }
     void Delete(string relative)
     {
         var path = Scoped(relative);
+        if (File.Exists(path)) throw new IOException("内容清理路径不是目录: " + relative);
         if (!Directory.Exists(path)) return;
         // 不跟随磁盘上的链接清理其他目录.
         if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0 ||
@@ -51,13 +55,32 @@ public sealed class LatestContentService(AppDbContext db, IOptions<ContentDelive
             throw new IOException("内容目录包含链接, 拒绝清理: " + relative);
         Directory.Delete(path, true);
     }
+    static string ContentDirectory(DevelopmentManifest manifest) =>
+        manifest.platform != "Editor" && DevelopmentProtocol.ValidContentVersion(manifest.contentVersion)
+            ? "current/" + manifest.platform + "/" + DevelopmentProtocol.VersionFolder(manifest.contentVersion, manifest.platform)
+            : "current/" + Guid.Parse(manifest.contentId).ToString("D");
+
+    async Task RemovePlatformAsync(string target, CancellationToken ct)
+    {
+        // 只按数据库所属平台定位旧 GUID 目录; 不扫描或删除其他平台的内容.
+        var row = await db.Set<CurrentContent>().SingleOrDefaultAsync(x => x.Target == target, ct);
+        Delete("current/" + target);
+        if (row != null)
+        {
+            Delete("current/" + Guid.Parse(row.ContentId).ToString("D"));
+            db.Remove(row);
+            await db.SaveChangesAsync(ct);
+        }
+    }
     public async Task CleanupAsync(CancellationToken ct)
     {
         await gate.Mutex.WaitAsync(ct);
         try
         {
             Directory.CreateDirectory(root);
-            var keep = (await db.Set<CurrentContent>().AsNoTracking().Select(x => x.ContentId).ToListAsync(ct)).ToHashSet();
+            var rows = await db.Set<CurrentContent>().AsNoTracking().ToListAsync(ct);
+            var keep = rows.Select(x => ContentDirectory(JsonSerializer.Deserialize<DevelopmentManifest>(x.ManifestJson, Json)!))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var parent in new[] { "staging", "releases", "current" })
             {
                 var path = Scoped(parent);
@@ -65,8 +88,17 @@ public sealed class LatestContentService(AppDbContext db, IOptions<ContentDelive
                 foreach (var child in Directory.EnumerateDirectories(path))
                 {
                     var name = Path.GetFileName(child);
-                    if (Guid.TryParse(name, out _) && (parent != "current" || !keep.Contains(name)))
+                    if (Guid.TryParse(name, out _) && (parent != "current" || !keep.Contains(parent + "/" + name)))
                         TryDelete(parent + "/" + name);
+                    else if (parent == "current" && name is "Android" or "StandaloneWindows64")
+                    {
+                        if ((File.GetAttributes(child) & FileAttributes.ReparsePoint) != 0) continue;
+                        foreach (var version in Directory.EnumerateDirectories(child))
+                        {
+                            var relative = parent + "/" + name + "/" + Path.GetFileName(version);
+                            if (!keep.Contains(relative)) TryDelete(relative);
+                        }
+                    }
                 }
             }
         }
@@ -81,7 +113,7 @@ public sealed class LatestContentService(AppDbContext db, IOptions<ContentDelive
     {
         ValidateTarget(target);
         var row = await db.Set<CurrentContent>().AsNoTracking().SingleOrDefaultAsync(x => x.Target == target, ct)
-            ?? throw Error(404, "CONTENT_NOT_READY", "尚未发布内容, 请在开发工作台更新并运行");
+            ?? throw Error(404, "CONTENT_NOT_READY", "尚未发布此平台内容");
         var manifest = JsonSerializer.Deserialize<DevelopmentManifest>(row.ManifestJson, Json)!;
         manifest.serverTime = DateTimeOffset.UtcNow.ToString("O");
         return manifest;
@@ -91,14 +123,18 @@ public sealed class LatestContentService(AppDbContext db, IOptions<ContentDelive
     public async Task<DevelopmentManifest> PublishAsync(string target, Stream input, string archiveHash, CancellationToken ct)
     {
         ValidateTarget(target);
+        if (target is not ("Editor" or "Android" or "StandaloneWindows64"))
+            throw Error(400, "INVALID_TARGET", "发布仅支持 Android 和 Windows x64");
         if (!ContentDeliveryValidation.IsSha256(archiveHash)) throw Error(400, "INVALID_HASH", "缺少归档 SHA256");
         await gate.Mutex.WaitAsync(ct);
         var id = Guid.NewGuid().ToString("D");
         var stage = "staging/" + id;
-        var final = "current/" + id;
+        string? final = null;
         var committed = false;
         try
         {
+            // Player 发布明确采用先删旧版语义. 删除失败时不会读取上传流.
+            if (target != "Editor") await RemovePlatformAsync(target, ct);
             Directory.CreateDirectory(Scoped(stage));
             var zipPath = Scoped(stage + "/upload.zip");
             await using (var output = File.Create(zipPath))
@@ -159,23 +195,31 @@ public sealed class LatestContentService(AppDbContext db, IOptions<ContentDelive
                 if (manifest.configHash != DevelopmentProtocol.ConfigHash(manifest.configs)) throw new FormatException("配置哈希不符");
                 if (target != "Editor")
                 {
-                    if (!ContentDeliveryValidation.IsSha256(manifest.apkCompatibility) || manifest.hotUpdatePath != "HybridCLR/HotUpdate.dll.bytes" ||
+                    if (!DevelopmentProtocol.ValidContentVersion(manifest.contentVersion) || manifest.hotUpdatePath != DevelopmentProtocol.HotUpdatePath ||
                         !manifest.files.Any(x => x.path == manifest.hotUpdatePath) ||
+                        !manifest.files.Any(x => x.path == manifest.hotUpdatePath + ".sha256") ||
                         !manifest.files.Any(x => x.path == manifest.catalogPath && x.path.StartsWith("Addressables/") && x.path.EndsWith(".bin")) ||
                         !manifest.files.Any(x => x.path == manifest.catalogHashPath && x.path.StartsWith("Addressables/") && x.path.EndsWith(".hash")) ||
                         !manifest.files.Any(x => x.path.StartsWith("Addressables/") && x.path.EndsWith(".bundle")))
-                        throw new FormatException("客户端内容缺少兼容标识、DLL 或资源目录");
+                        throw new FormatException("客户端内容缺少版本号、DLL 或资源目录");
+                    var dll = manifest.files.Single(x => x.path == manifest.hotUpdatePath);
+                    var recordedHash = (await File.ReadAllTextAsync(Scoped(stage + "/files/" + manifest.hotUpdatePath + ".sha256"), ct)).Trim();
+                    if (!dll.sha256.Equals(recordedHash, StringComparison.OrdinalIgnoreCase))
+                        throw new FormatException("DLL 哈希记录不一致");
                 }
             }
-            Directory.CreateDirectory(Scoped("current"));
+            manifest.contentId = id;
+            manifest.serverTime = DateTimeOffset.UtcNow.ToString("O");
+            var manifestJson = JsonSerializer.Serialize(manifest, Json);
+            await File.WriteAllTextAsync(Scoped(stage + "/files/manifest.json"), manifestJson, ct);
+            final = ContentDirectory(manifest);
+            Directory.CreateDirectory(Path.GetDirectoryName(Scoped(final))!);
             Directory.Move(Scoped(stage + "/files"), Scoped(final));
             var row = await db.Set<CurrentContent>().SingleOrDefaultAsync(x => x.Target == target, ct);
             var old = row?.ContentId;
-            manifest.contentId = id;
-            manifest.serverTime = DateTimeOffset.UtcNow.ToString("O");
             if (row == null) { row = new CurrentContent { Target = target }; db.Add(row); }
             row.ContentId = id;
-            row.ManifestJson = JsonSerializer.Serialize(manifest, Json);
+            row.ManifestJson = manifestJson;
             await db.SaveChangesAsync(ct);
             committed = true;
             if (old != null) TryDelete("current/" + old);
@@ -194,7 +238,7 @@ public sealed class LatestContentService(AppDbContext db, IOptions<ContentDelive
         }
         finally
         {
-            try { TryDelete(stage); if (!committed) TryDelete(final); }
+            try { TryDelete(stage); if (!committed && final != null) TryDelete(final); }
             finally { gate.Mutex.Release(); }
         }
     }
@@ -207,7 +251,7 @@ public sealed class LatestContentService(AppDbContext db, IOptions<ContentDelive
             var manifest = await LatestAsync(target, ct);
             if (manifest.contentId != id) throw Error(409, "CONTENT_CHANGED", "内容已更新, 请重启获取最新内容");
             if (!manifest.files.Any(x => x.path == relative)) throw Error(404, "CONTENT_FILE_NOT_FOUND", "内容文件不存在");
-            return new FileStream(Scoped("current/" + id + "/" + relative), FileMode.Open, FileAccess.Read,
+            return new FileStream(Scoped(ContentDirectory(manifest) + "/" + relative), FileMode.Open, FileAccess.Read,
                 FileShare.Read | FileShare.Delete, 131072, FileOptions.Asynchronous);
         }
         finally { gate.Mutex.Release(); }
@@ -223,7 +267,7 @@ public sealed class LatestContentService(AppDbContext db, IOptions<ContentDelive
             if (manifest.configHash != expectedHash) throw Error(409, "CONTENT_CHANGED", "配置已更新, 请重启客户端");
             var files = new Dictionary<string, byte[]>();
             foreach (var config in manifest.configs)
-                files.Add(config.category, await File.ReadAllBytesAsync(Scoped("current/" + manifest.contentId + "/" + config.path), ct));
+                files.Add(config.category, await File.ReadAllBytesAsync(Scoped(ContentDirectory(manifest) + "/" + config.path), ct));
             ConfigArtifacts.Verify(files, manifest.configs);
             return (GameConfigTables.Assemble(files), Guid.Parse(manifest.contentId));
         }

@@ -18,6 +18,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         $"achen-content-{Guid.NewGuid():N}");
 
     public const string PublishKey = "integration-test-content-publish-key-32-characters";
+    public string ContentPath => contentPath;
 
     public IGachaRandom? GachaRandom { get; init; }
 

@@ -46,7 +46,8 @@ internal sealed class PublishedConfigFixture(ApiFactory factory)
         var files = configs.ToDictionary(x => GameConfigTables.PackagePath(x.Key), x => x.Value);
         if (target != "Editor")
         {
-            files["HybridCLR/HotUpdate.dll.bytes"] = [1,2];
+            files[DevelopmentProtocol.HotUpdatePath] = [1,2];
+            files[DevelopmentProtocol.HotUpdatePath + ".sha256"] = System.Text.Encoding.UTF8.GetBytes(Convert.ToHexString(SHA256.HashData(files[DevelopmentProtocol.HotUpdatePath])));
             files["Addressables/catalog.bin"] = [3,4];
             files["Addressables/catalog.hash"] = [5,6];
             files["Addressables/config.bundle"] = [7,8];
@@ -55,7 +56,7 @@ internal sealed class PublishedConfigFixture(ApiFactory factory)
             format=GameConfigTables.Format(x.Key), address=GameConfigTables.Address(x.Key), size=x.Value.Length,
             sha256=Convert.ToHexString(SHA256.HashData(x.Value)).ToLowerInvariant() }).ToArray();
         var manifest = new DevelopmentManifest { platform=target, configs=artifacts, configHash=DevelopmentProtocol.ConfigHash(artifacts),
-            apkCompatibility=new string('a',64), hotUpdatePath="HybridCLR/HotUpdate.dll.bytes",
+            contentVersion="1.0.1", hotUpdatePath=DevelopmentProtocol.HotUpdatePath,
             catalogPath="Addressables/catalog.bin", catalogHashPath="Addressables/catalog.hash",
             files=files.Select(x => new DevelopmentFile { path=x.Key,size=x.Value.Length,sha256=Convert.ToHexString(SHA256.HashData(x.Value)) }).ToArray() };
         mutate?.Invoke(manifest);

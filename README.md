@@ -23,6 +23,10 @@ dotnet run --project src/AChen.Backend.Api
 
 健康检查：`GET /health`。就绪：`GET /ready`。管理台：`http://127.0.0.1:5080/admin/content/login`。接口说明见 [docs/api/README.md](docs/api/README.md)。
 
+游戏仓库 `mBulid` 使用共享内容协议 5，发送带 `contentVersion` 的 ZIP 到 `PUT /api/dev/content/Android` 或 `StandaloneWindows64`。Player 内容保存为 `Data/content/current/<平台>/<版本_安卓或win>/`，热更 DLL 路径为 `HybridCLR/HotUpdate.dll`，每次成功发布生成新的 GUID `contentId`。下载地址仍按 GUID 验证当前版本，兼容读取旧 GUID 存储目录。数据库继续保存 Manifest JSON，不新增表。
+
+发布经鉴权与请求参数校验后，在锁内先删除目标平台旧目录和当前记录，再接收新包。上传中断、归档或文件校验失败后没有当前版本，最新内容接口返回 404；不恢复旧版，不自动重发。删除失败会终止上传。其他平台及独立 `PUT /api/dev/editor-config` 发布的 Editor 配置保留。Editor 本地启动不请求后端最新内容。
+
 ## AdminWeb
 
 独立 Vite 应用，默认 `http://127.0.0.1:5173`，通过 CORS 访问 5080。
@@ -37,7 +41,7 @@ npm run dev
 
 ## 共享契约
 
-`src/AChen.Backend.Api/Shared/` 里的 `PublishedGameConfig.cs`、`CardRow.cs`、`TranslationRow.cs` 是游戏仓库 `Assets/Shared` 的副本。改发布格式或表结构时两边一起改，否则结算与客户端展示会不一致。
+作为游戏仓库子模块构建时，API 工程直接链接游戏仓库 `Assets/Shared/Configuration` 及生成的 CardRow、TranslationRow；`Shared/` 旧副本已排除编译。发布协议和配置格式共用这些纯 C# 契约，变更后需同步验证客户端主包与后端分发。
 
 ## 测试
 
