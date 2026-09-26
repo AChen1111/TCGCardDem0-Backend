@@ -15,4 +15,10 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.23" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Shared/**/*.cs" />
+    <Compile Include="../../../Assets/Shared/Configuration/*.cs" Exclude="../../../Assets/Shared/Configuration/ContentSession.cs" Link="Shared/%(Filename)%(Extension)" />
+    <Compile Include="../../../Assets/Shared/Card/Generated/CardRow.cs" Link="Shared/CardRow.cs" />
+    <Compile Include="../../../Assets/Shared/Localization/Generated/TranslationRow.cs" Link="Shared/TranslationRow.cs" />
+  </ItemGroup>
 </Project>

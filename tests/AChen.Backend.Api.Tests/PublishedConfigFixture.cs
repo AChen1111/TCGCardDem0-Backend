@@ -4,90 +4,85 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using AChen.Configuration;
 using AChen.Backend.Api.Features.ContentDelivery;
-
 namespace AChen.Backend.Api.Tests;
 
 internal sealed class PublishedConfigFixture(ApiFactory factory)
 {
-    public PublishedGameConfig Data { get; } = PublishedConfigReader.Parse(SourceBytes());
-    public string AppVersion { get; } = "test-" + Guid.NewGuid().ToString("N");
+    public PublishedGameConfig Data { get; } = GameConfigTables.Assemble(SourceFiles());
+    public string AppVersion { get; } = "0.1.0";
     public Guid? ReleaseId { get; private set; }
-    private int version;
-    private readonly List<HttpClient> clients = [];
-
-    public static byte[] SourceBytes()
+    public string ConfigHash { get; private set; } = "";
+    readonly List<HttpClient> clients = [];
+    public static Dictionary<string, byte[]> SourceFiles()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
+        while (directory != null)
         {
-            var path = Path.Combine(directory.FullName, "Assets/GameConfiguration/config.json");
-            if (File.Exists(path)) return File.ReadAllBytes(path);
+            var root = Path.Combine(directory.FullName, "Assets/GameConfiguration");
+            if (Directory.Exists(root)) return Directory.GetFiles(root, "*.bytes").ToDictionary(x => Path.GetFileNameWithoutExtension(x)!, File.ReadAllBytes);
             directory = directory.Parent;
         }
-        throw new FileNotFoundException("Repository config fixture not found.");
+        throw new FileNotFoundException("Repository binary config fixture not found.");
     }
-
-    public void Attach(HttpClient client)
-    {
-        clients.Add(client);
-        SetHeaders(client);
-    }
-
+    public void Attach(HttpClient client) { clients.Add(client); SetHeaders(client); }
     public void SetHeaders(HttpClient client)
     {
-        foreach (var header in new[] { "X-Content-Release", "X-Content-Channel", "X-Content-Platform", "X-Content-App-Version" })
-            client.DefaultRequestHeaders.Remove(header);
-        client.DefaultRequestHeaders.Add("X-Content-Release", ReleaseId.ToString());
-        client.DefaultRequestHeaders.Add("X-Content-Channel", "development");
-        client.DefaultRequestHeaders.Add("X-Content-Platform", "StandaloneWindows64");
-        client.DefaultRequestHeaders.Add("X-Content-App-Version", AppVersion);
+        client.DefaultRequestHeaders.Remove("X-Content-Target"); client.DefaultRequestHeaders.Remove("X-Config-Hash");
+        client.DefaultRequestHeaders.Add("X-Content-Target", "Editor"); client.DefaultRequestHeaders.Add("X-Config-Hash", ConfigHash);
     }
-
-    public async Task PublishAsync(bool updateClients = true)
+    public Dictionary<string, byte[]> Files() => new()
     {
-        using var publisher = factory.CreateClient();
-        publisher.DefaultRequestHeaders.Add("X-Content-Publish-Key", ApiFactory.PublishKey);
-        var contentVersion = "1.0." + ++version;
-        var created = await publisher.PostAsJsonAsync("/api/content/releases", new
-        { platform = "StandaloneWindows64", appVersion = AppVersion, contentVersion });
-        created.EnsureSuccessStatusCode();
-        var release = (await created.Content.ReadFromJsonAsync<Release>())!;
-        var files = new Dictionary<string, byte[]>
+        ["avatars"] = GameConfigTables.FromRows(Data.Catalog.Avatars).Encode(),
+        ["wallpapers"] = GameConfigTables.FromRows(Data.Catalog.Wallpapers).Encode(),
+        ["card-packs"] = GameConfigTables.FromRows(Data.Catalog.CardPacks).Encode(),
+        ["pool-entries"] = GameConfigTables.FromRows(Data.PoolEntries).Encode(),
+        ["rarity-weights"] = GameConfigTables.FromRows(Data.RarityWeights).Encode(),
+        ["all-cards"] = GameConfigTables.FromRows(Data.AllCards).Encode(),
+        ["wallpaper-offsets"] = GameConfigTables.FromRows(Data.WallpaperOffsets).Encode(),
+        ["Cards"] = Data.CardTable, ["Translations"] = Data.TranslationTable
+    };
+    public static byte[] Package(string target, Dictionary<string, byte[]> configs, Action<DevelopmentManifest>? mutate = null)
+    {
+        var files = configs.ToDictionary(x => GameConfigTables.PackagePath(x.Key), x => x.Value);
+        if (target != "Editor")
         {
-            ["HybridCLR/HotUpdate.dll.bytes"] = [1, 2],
-            ["Addressables/catalog.bin"] = [3, 4],
-            ["Addressables/catalog.hash"] = [5, 6],
-            ["Addressables/config.bundle"] = [7, 8],
-            [PublishedGameConfig.PackagePath] = JsonSerializer.SerializeToUtf8Bytes(Data, PublishedConfigReader.JsonOptions)
-        };
-        var manifest = new
-        {
-            schemaVersion = 2, platform = "StandaloneWindows64", appVersion = AppVersion, contentVersion,
-            hotUpdatePath = "HybridCLR/HotUpdate.dll.bytes", catalogPath = "Addressables/catalog.bin",
-            catalogHashPath = "Addressables/catalog.hash", configPath = PublishedGameConfig.PackagePath,
-            files = files.Select(x => new { path = x.Key, size = x.Value.Length, sha256 = Convert.ToHexString(SHA256.HashData(x.Value)) }).ToArray()
-        };
-        using var buffer = new MemoryStream();
-        using (var zip = new ZipArchive(buffer, ZipArchiveMode.Create, true))
-        {
-            foreach (var file in files)
-            {
-                using var output = zip.CreateEntry(file.Key).Open();
-                output.Write(file.Value);
-            }
-            using var stream = zip.CreateEntry("release-manifest.json").Open();
-            JsonSerializer.Serialize(stream, manifest);
+            files["HybridCLR/HotUpdate.dll.bytes"] = [1,2];
+            files["Addressables/catalog.bin"] = [3,4];
+            files["Addressables/catalog.hash"] = [5,6];
+            files["Addressables/config.bundle"] = [7,8];
         }
-        var bytes = buffer.ToArray();
-        using var upload = new HttpRequestMessage(HttpMethod.Put, $"/api/content/releases/{release.Id}/artifact") { Content = new ByteArrayContent(bytes) };
-        upload.Content.Headers.ContentType = new("application/zip");
-        upload.Headers.Add("X-Artifact-Sha256", Convert.ToHexString(SHA256.HashData(bytes)));
-        (await publisher.SendAsync(upload)).EnsureSuccessStatusCode();
-        (await publisher.PutAsJsonAsync($"/api/content/active-releases/development/StandaloneWindows64/{AppVersion}",
-            new { releaseId = release.Id, expectedCurrentReleaseId = ReleaseId })).EnsureSuccessStatusCode();
-        ReleaseId = release.Id;
-        if (updateClients) foreach (var client in clients) SetHeaders(client);
+        var artifacts = configs.Select(x => new ConfigArtifact { category=x.Key, path=GameConfigTables.PackagePath(x.Key),
+            format=GameConfigTables.Format(x.Key), address=GameConfigTables.Address(x.Key), size=x.Value.Length,
+            sha256=Convert.ToHexString(SHA256.HashData(x.Value)).ToLowerInvariant() }).ToArray();
+        var manifest = new DevelopmentManifest { platform=target, configs=artifacts, configHash=DevelopmentProtocol.ConfigHash(artifacts),
+            apkCompatibility=new string('a',64), hotUpdatePath="HybridCLR/HotUpdate.dll.bytes",
+            catalogPath="Addressables/catalog.bin", catalogHashPath="Addressables/catalog.hash",
+            files=files.Select(x => new DevelopmentFile { path=x.Key,size=x.Value.Length,sha256=Convert.ToHexString(SHA256.HashData(x.Value)) }).ToArray() };
+        mutate?.Invoke(manifest);
+        using var buffer = new MemoryStream();
+        using (var zip = new ZipArchive(buffer, ZipArchiveMode.Create,true))
+        {
+            foreach (var file in files) { using var output=zip.CreateEntry(file.Key).Open(); output.Write(file.Value); }
+            using var outputManifest=zip.CreateEntry("manifest.json").Open();
+            JsonSerializer.Serialize(outputManifest,manifest,LatestContentService.Json);
+        }
+        return buffer.ToArray();
     }
-
-    private sealed record Release(Guid Id);
+    public static async Task<HttpResponseMessage> Upload(HttpClient client,string target,byte[] bytes)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put,target=="Editor"?"/api/dev/editor-config":"/api/dev/content/"+target)
+            { Content=new ByteArrayContent(bytes) };
+        request.Headers.Add("X-Artifact-Sha256",Convert.ToHexString(SHA256.HashData(bytes)));
+        request.Headers.Add("X-Content-Publish-Key",ApiFactory.PublishKey);
+        return await client.SendAsync(request);
+    }
+    public async Task PublishAsync(bool updateClients=true)
+    {
+        using var publisher=factory.CreateClient();
+        using var response=await Upload(publisher,"Editor",Package("Editor",Files()));
+        response.EnsureSuccessStatusCode();
+        var manifest=(await response.Content.ReadFromJsonAsync<DevelopmentManifest>(LatestContentService.Json))!;
+        ReleaseId=Guid.Parse(manifest.contentId); ConfigHash=manifest.configHash;
+        if(updateClients) foreach(var client in clients) SetHeaders(client);
+    }
 }

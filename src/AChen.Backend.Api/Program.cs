@@ -63,11 +63,12 @@ builder.Services.AddOptions<AuthOptions>()
 builder.Services.AddOptions<ContentDeliveryOptions>()
     .BindConfiguration(ContentDeliveryOptions.SectionName)
     .Validate(options => !string.IsNullOrWhiteSpace(options.StorageRoot), "ContentDelivery:StorageRoot is required.")
-    .Validate(options => options.PublishKey.Length >= 32, "ContentDelivery:PublishKey must contain at least 32 characters.")
+    // 与 Development 请求鉴权一致, 本地启动不要求配置发布密钥.
+    .Validate(options => builder.Environment.IsDevelopment() || options.PublishKey.Length >= 32,
+        "ContentDelivery:PublishKey must contain at least 32 characters outside Development.")
     .Validate(options => options.MaxArchiveBytes > 0, "ContentDelivery:MaxArchiveBytes must be positive.")
     .Validate(options => options.MaxExpandedBytes >= options.MaxArchiveBytes, "ContentDelivery:MaxExpandedBytes must be at least MaxArchiveBytes.")
     .Validate(options => options.MaxFileCount is >= 1 and <= 100_000, "ContentDelivery:MaxFileCount must be between 1 and 100000.")
-    .Validate(options => options.AllowedChannels.Length > 0 && options.AllowedChannels.All(value => !string.IsNullOrWhiteSpace(value)), "ContentDelivery:AllowedChannels must not be empty.")
     .ValidateOnStart();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -81,12 +82,11 @@ builder.Services.AddSingleton<IGachaRandom, CryptoGachaRandom>();
 builder.Services.AddScoped<GachaService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<PublishedConfigReader>();
-builder.Services.AddScoped<IContentReleaseRepository, ContentReleaseRepository>();
-builder.Services.AddScoped<ContentReleaseService>();
-builder.Services.AddSingleton<IContentStorage, LocalContentStorage>();
-builder.Services.AddSingleton<ContentReleaseLockProvider>();
+builder.Services.AddScoped<LatestContentService>();
+builder.Services.AddSingleton<ContentGate>();
+builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.IncludeFields = true);
+
 builder.Services.AddSingleton<ContentPublisherCredentials>();
-builder.Services.AddHostedService<ContentStagingCleanupService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -244,6 +244,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var database = scope.ServiceProvider.GetRequiredService<AppDbContext>().Database;
     await database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<LatestContentService>().CleanupAsync(CancellationToken.None);
 }
 
 app.Use(async (context, next) =>
@@ -268,8 +269,7 @@ app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/ready", async (AppDbContext db, CancellationToken cancellationToken) =>
-    await db.Database.CanConnectAsync(cancellationToken) &&
-    await app.Services.GetRequiredService<IContentStorage>().CheckReadyAsync(cancellationToken)
+    await db.Database.CanConnectAsync(cancellationToken)
         ? Results.Ok(new { status = "ready" })
         : Results.StatusCode(StatusCodes.Status503ServiceUnavailable));
 app.MapAuthEndpoints();

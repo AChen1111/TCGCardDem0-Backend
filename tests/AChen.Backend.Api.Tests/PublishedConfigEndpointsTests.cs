@@ -34,32 +34,32 @@ public sealed class PublishedConfigEndpointsTests(ApiFactory factory) : IClassFi
     }
 
     [Fact]
-    public async Task Stale_or_missing_release_header_still_draws_from_active_config()
+    public async Task Changed_config_requires_restart_before_draw()
     {
         var config = new PublishedConfigFixture(factory);
         await config.PublishAsync();
         using var player = await PlayerAsync(config);
+        config.Data.Catalog.CardPacks.First(x => x.IsEnabled).PriceGold += 1;
         await config.PublishAsync(updateClients: false);
         player.DefaultRequestHeaders.Remove("X-Content-Release");
         var pack = config.Data.Catalog.CardPacks.First(x => x.IsEnabled);
         var response = await player.PostAsJsonAsync("/api/player/card-draws", new
         { packId = pack.Id, poolKey = pack.PoolKey, count = 1, expectedRevision = 0 });
-        response.EnsureSuccessStatusCode();
-        using var state = JsonDocument.Parse(await player.GetStringAsync("/api/player/bootstrap"));
-        Assert.Equal(10000 - pack.PriceGold, state.RootElement.GetProperty("gold").GetInt64());
-        Assert.Equal(1, state.RootElement.GetProperty("ownedCards").GetArrayLength());
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("CONTENT_CHANGED", await response.Content.ReadAsStringAsync());
+
     }
 
     [Fact]
-    public async Task Missing_content_context_can_purchase()
+    public async Task Missing_content_context_cannot_purchase()
     {
         var config = new PublishedConfigFixture(factory);
         await config.PublishAsync();
         using var player = await PlayerAsync(config);
-        player.DefaultRequestHeaders.Remove("X-Content-Release");
+        player.DefaultRequestHeaders.Remove("X-Config-Hash");
         var response = await player.PostAsJsonAsync("/api/player/purchase", new
         { catalogType = "avatar", itemId = 2, expectedRevision = 0 });
-        response.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]

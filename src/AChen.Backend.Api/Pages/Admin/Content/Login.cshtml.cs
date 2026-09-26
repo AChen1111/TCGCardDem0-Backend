@@ -22,7 +22,7 @@ public sealed class LoginModel(ContentPublisherCredentials credentials) : PageMo
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            return RedirectToPage("/Admin/Content/Index");
+            return RedirectToPage("/Admin/Accounts/Index");
         }
 
         return Page();
@@ -55,6 +55,6 @@ public sealed class LoginModel(ContentPublisherCredentials credentials) : PageMo
         PublishKey = "";
         return Url.IsLocalUrl(ReturnUrl)
             ? LocalRedirect(ReturnUrl!)
-            : RedirectToPage("/Admin/Content/Index");
+            : RedirectToPage("/Admin/Accounts/Index");
     }
 }

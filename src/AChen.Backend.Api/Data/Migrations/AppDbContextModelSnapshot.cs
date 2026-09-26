@@ -88,192 +88,9 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.ActiveContentRelease", b =>
-                {
-                    b.Property<string>("Channel")
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
 
-                    b.Property<string>("Platform")
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
 
-                    b.Property<string>("AppVersion")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("ReleaseId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("UpdatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Channel", "Platform", "AppVersion");
-
-                    b.HasIndex("ReleaseId");
-
-                    b.ToTable("ActiveContentReleases");
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.ContentPublication", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("AppVersion")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Channel")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Platform")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("PreviousReleaseId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("ReleaseId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("UpdatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PreviousReleaseId");
-
-                    b.HasIndex("ReleaseId");
-
-                    b.HasIndex("Channel", "Platform", "AppVersion", "CreatedAt");
-
-                    b.ToTable("ContentPublications");
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.ContentRelease", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("AppVersion")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ArtifactSha256")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CatalogHashPath")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CatalogPath")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ContentVersion")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("FailureCode")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("FileCount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("HotUpdatePath")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Platform")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("ReadyAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("TotalBytes")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("UpdatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("Platform", "AppVersion", "ContentVersion")
-                        .IsUnique();
-
-                    b.ToTable("ContentReleases");
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.ContentReleaseFile", b =>
-                {
-                    b.Property<Guid>("ReleaseId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RelativePath")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Sha256")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("Size")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("UpdatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("ReleaseId", "RelativePath");
-
-                    b.ToTable("ContentReleaseFiles");
-                });
 
 
 
@@ -426,45 +243,8 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.ActiveContentRelease", b =>
-                {
-                    b.HasOne("AChen.Backend.Api.Features.ContentDelivery.ContentRelease", "Release")
-                        .WithMany()
-                        .HasForeignKey("ReleaseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
 
-                    b.Navigation("Release");
-                });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.ContentPublication", b =>
-                {
-                    b.HasOne("AChen.Backend.Api.Features.ContentDelivery.ContentRelease", "PreviousRelease")
-                        .WithMany()
-                        .HasForeignKey("PreviousReleaseId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("AChen.Backend.Api.Features.ContentDelivery.ContentRelease", "Release")
-                        .WithMany()
-                        .HasForeignKey("ReleaseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("PreviousRelease");
-
-                    b.Navigation("Release");
-                });
-
-            modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.ContentReleaseFile", b =>
-                {
-                    b.HasOne("AChen.Backend.Api.Features.ContentDelivery.ContentRelease", "Release")
-                        .WithMany("Files")
-                        .HasForeignKey("ReleaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Release");
-                });
 
 
 
@@ -487,11 +267,15 @@ namespace AChen.Backend.Api.Data.Migrations
                     b.Navigation("RefreshSessions");
                 });
 
-            modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.ContentRelease", b =>
-                {
-                    b.Navigation("Files");
-                });
 
+            modelBuilder.Entity("AChen.Backend.Api.Features.ContentDelivery.CurrentContent", b =>
+            {
+                b.Property<string>("Target").HasMaxLength(32).HasColumnType("TEXT");
+                b.Property<string>("ContentId").IsRequired().HasColumnType("TEXT");
+                b.Property<string>("ManifestJson").IsRequired().HasColumnType("TEXT");
+                b.HasKey("Target");
+                b.ToTable("CurrentContents");
+            });
 #pragma warning restore 612, 618
         }
     }
