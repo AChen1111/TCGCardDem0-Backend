@@ -18,6 +18,7 @@ public sealed class PlayerProfile
     public List<int> OwnedBackgroundIds { get; set; } = [];
     public List<OwnedCard> OwnedCards { get; set; } = [];
     public long Gold { get; set; }
+    public long Ur { get; set; }
     public long Revision { get; set; }
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; set; }

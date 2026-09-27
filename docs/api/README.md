@@ -83,7 +83,7 @@
 }
 ```
 
-玩家数据含 `avatarId`、`ownedAvatarIds`、`avatarFrameId`、`ownedAvatarFrameIds`、`backgroundId`、`ownedBackgroundIds`、`ownedCards`、`gold`、`revision`。`ownedCards` 每项为 `{ cardId, rarity, count }`，`cardId` 为字符串，同一卡牌不同稀有度分开堆叠。注册默认昵称等于账号、`avatarId` 为 1010001，`avatarFrameId` 为 1030001、`backgroundId` 为 1，并拥有头像 1010001、头像框 1030001 与壁纸 1，`ownedCards` 为空，`gold` 为 0。`PATCH /api/player/profile` 只能装备已拥有且已发布在售的头像或壁纸。
+玩家数据含 `avatarId`、`ownedAvatarIds`、`avatarFrameId`、`ownedAvatarFrameIds`、`backgroundId`、`ownedBackgroundIds`、`ownedCards`、`gold`、`ur`、`revision`。`ownedCards` 每项为 `{ cardId, rarity, count }`，`cardId` 为字符串，同一卡牌不同稀有度分开堆叠。注册默认昵称等于账号、`avatarId` 为 1010001，`avatarFrameId` 为 1030001、`backgroundId` 为 1，并拥有头像 1010001、头像框 1030001 与壁纸 1，`ownedCards` 为空，`gold` 和 `ur` 为 0。`PATCH /api/player/profile` 只能装备已拥有且已发布在售的头像或壁纸。
 
 抽卡：
 
@@ -275,3 +275,53 @@
 ```
 
 `PlayerAvatarFrames` 一次性迁移将旧玩家头像和拥有头像重置为 1010001，赠送并装备头像框 1030001；不会重置金币、壁纸或卡牌。配置、客户端与服务端需要配套发布。
+
+
+## UR 资产与卡牌工坊
+
+`ur` 为账号独立持久化资产（64 位整数，初始 0），所有登录、刷新令牌、玩家查询及交易返回的 `player` 均包含它。迁移 `20260927130135_PlayerUr` 仅增加默认 0 的列，保留原账号、金币、收藏、卡组及 Revision。需要配套 UR 配置和新版客户端；礼品领取的响应结构有变化。
+
+| 方法 | 路径 | 请求／行为 |
+| --- | --- | --- |
+| POST | `/api/player/cards/craft` | `{ "cardId": "01639384", "expectedRevision": 7, "expectedUrAmount": 30 }` |
+| POST | `/api/player/cards/dismantle` | `{ "cardId": "01639384", "rarity": 1, "count": 2, "expectedRevision": 8, "expectedUrAmount": 30 }` |
+
+两接口要求 Bearer 和当前内容配置上下文，与抽卡接口相同。`expectedUrAmount` 是本次总花费／总收益，用来拒绝旧报价；最终价格由服务器配置决定。成功为 `200 { "player": { ...完整新资产... }, "urAmount": 30 }`，玩家 Revision 加一；失败资产不变。不以请求提供的账号 ID 决定资产归属。
+
+合成仅支持普通版 `rarity=0`：该普通版当前持有量为 0 才可购买一张；拥有其他版本不影响资格。已发布 `all-cards` 中所有卡牌均可合成，不受额外卡分类或禁限规则限制。价格来自 `card-crafting`。
+
+分解允许五种版本、任意正整数数量，包括最后一张；不能超出库存。收益来自 `card-recycling.DismantleUr`。每套已保存卡组分别合计主卡组和额外卡组内相同 `CardId+Rarity` 的重复条目；剩余数量须满足所有卡组，因此跨卡组取最大值，草稿也参与检查。检查和库存更新位于同一事务；不会编辑卡组。原卡组 PUT 仍仅做存储和结构校验。
+
+| 错误码 | 状态 | 含义 |
+| --- | --- | --- |
+| PLAYER_DATA_CHANGED | 409 | 玩家 Revision 冲突，不自动覆盖 |
+| CARD_PRICE_CHANGED | 409 | 报价改变，`errors.urAmount[0]` 为服务器当前总报价的十进制字符串；刷新后重新确认 |
+| CARD_IN_DECK | 422 | `errors.decks` 给出受影响卡组名称列表 |
+| NORMAL_CARD_ALREADY_OWNED | 422 | 已拥有普通版 |
+| INSUFFICIENT_UR | 422 | UR 不足 |
+| CARD_NOT_FOUND | 422 | 合成卡 ID 不在已发布全卡清单 |
+| CARD_NOT_OWNED | 422 | 分解数量超出持有量 |
+| INVALID_DISMANTLE_COUNT | 422 | 数量非正或版本不在 0–4 |
+| UR_OVERFLOW | 422 | 结算超出 64 位资产范围 |
+
+### 发卡溢出
+
+抽卡和礼品共用结算器。每个 `CardId+Rarity` 新增持有至多 3 张，按获得顺序使用剩余名额，新增超额副本按 `card-recycling.OverflowUr` 兑换。历史已有超过 3 张的部分原样保留。例如持有 5 张再获得 2 张，结果仍持有 5 张，仅这次的 2 张兑换。禁限表不改变收藏上限。
+
+`POST /api/player/card-draws` 的每个 `results` 条目新增：
+
+```json
+{ "cardId": "01639384", "rarity": 0, "sourcePool": "Card01", "isOverflow": true, "urGained": 10 }
+```
+
+结果仍按抽取顺序返回；未溢出为 `false, 0`。金币、收藏、UR 和玩家 Revision 一次保存。
+
+`POST /api/gifts/{id}/claim` 的新响应：
+
+```json
+{ "player": { "ur": 40, "revision": 9 }, "urGained": 20 }
+```
+
+以上 `player` 只展示相关字段，实际为完整 PlayerResponse。领取状态、金币、收藏、UR 和 Revision 同次事务更新；重复领取失败。客户端只在 `urGained>0` 时展示收益提示。
+
+配置要求：`card-crafting` 唯一行 `Rarity=0, CostUr>0`；`card-recycling` 必须覆盖 0–4，`DismantleUr` 和 `OverflowUr` 各自为正整数。首版分别是 30 与 10/15/20/25/30。缺失或损坏不能按免费执行；服务端旧包读取的必需表集合保持兼容，需要 UR 的操作才强制加载这两张经济配置。

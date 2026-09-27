@@ -22,6 +22,7 @@ public sealed record InboxItem(
     string? TitleKey = null, int? AvatarFrameId = null);
 
 public sealed record ClaimGiftRequest(long ExpectedRevision);
+public sealed record ClaimGiftResponse(PlayerResponse Player, long UrGained);
 
 public sealed record AdminGiftCard(string CardId, int Count, int Rarity = 0);
 

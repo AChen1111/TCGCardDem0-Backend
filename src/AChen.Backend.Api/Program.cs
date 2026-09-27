@@ -78,6 +78,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AccountManagementService>();
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<PlayerService>();
+builder.Services.AddScoped<CardWorkshopService>();
 builder.Services.AddScoped<SocialService>();
 builder.Services.AddSingleton<IGachaRandom, CryptoGachaRandom>();
 builder.Services.AddScoped<GachaService>();

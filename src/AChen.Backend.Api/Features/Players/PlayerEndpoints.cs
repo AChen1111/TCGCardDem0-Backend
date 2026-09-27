@@ -26,6 +26,10 @@ public static class PlayerEndpoints
             .WithMetadata(new RequestSizeLimitAttribute(ProfileRequestLimit));
         group.MapPost("/card-draws", DrawCardsAsync)
             .WithMetadata(new RequestSizeLimitAttribute(ProfileRequestLimit));
+        group.MapPost("/cards/craft", async (CraftCardRequest request, HttpContext context, CardWorkshopService service, CancellationToken ct) =>
+            Results.Ok(await service.CraftAsync(GetUserId(context), request, ct))).WithMetadata(new RequestSizeLimitAttribute(ProfileRequestLimit));
+        group.MapPost("/cards/dismantle", async (DismantleCardRequest request, HttpContext context, CardWorkshopService service, CancellationToken ct) =>
+            Results.Ok(await service.DismantleAsync(GetUserId(context), request, ct))).WithMetadata(new RequestSizeLimitAttribute(ProfileRequestLimit));
         return endpoints;
     }
 

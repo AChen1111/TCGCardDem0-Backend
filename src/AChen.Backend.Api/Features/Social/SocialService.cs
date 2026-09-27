@@ -1,3 +1,5 @@
+using AChen.Configuration;
+using AChen.Backend.Api.Features.ContentDelivery;
 using AChen.Backend.Api.Data;
 using AChen.Backend.Api.Features.Players;
 using AChen.Backend.Api.Infrastructure;
@@ -7,6 +9,7 @@ namespace AChen.Backend.Api.Features.Social;
 
 public sealed class SocialService(
     AppDbContext db,
+    PublishedConfigReader configReader,
     IPlayerRepository players,
     TimeProvider timeProvider,
     ILogger<SocialService> logger)
@@ -243,7 +246,7 @@ public sealed class SocialService(
             .ToList();
     }
 
-    public async Task<PlayerResponse> ClaimGiftAsync(
+    public async Task<ClaimGiftResponse> ClaimGiftAsync(
         Guid userId,
         Guid giftId,
         ClaimGiftRequest request,
@@ -274,16 +277,17 @@ public sealed class SocialService(
             throw new ApiException(StatusCodes.Status400BadRequest, "GOLD_OVERFLOW", "金币数量超出上限");
         }
 
+        var settlement = CardInventorySettlement.Grant(profile.OwnedCards, gift.Cards,
+            CardEconomyConfiguration.From(await configReader.GetAsync(cancellationToken)));
+        long ur = CardInventorySettlement.AddUr(profile.Ur, settlement.UrGained);
         var now = timeProvider.GetUtcNow();
         if (gift.Gold > 0)
         {
             profile.Gold += gift.Gold;
         }
 
-        if (gift.Cards.Count > 0)
-        {
-            profile.OwnedCards = MergeOwnedCards(profile.OwnedCards, gift.Cards);
-        }
+        profile.OwnedCards = settlement.Cards;
+        profile.Ur = ur;
 
         profile.Revision++;
         profile.UpdatedAt = now;
@@ -309,7 +313,7 @@ public sealed class SocialService(
             gift.Gold,
             gift.Cards.Count,
             profile.Revision);
-        return ToPlayerResponse(profile);
+        return new ClaimGiftResponse(PlayerService.ToResponse(profile), settlement.UrGained);
     }
 
     public async Task<AdminGrantGiftResponse> GrantGiftByUsernameAsync(
@@ -502,44 +506,7 @@ public sealed class SocialService(
             .ToList();
     }
 
-    private static List<OwnedCard> MergeOwnedCards(
-        IEnumerable<OwnedCard> existing,
-        IReadOnlyList<OwnedCard> grants)
-    {
-        var merged = existing.ToDictionary(card => (card.CardId, card.Rarity));
-        foreach (var grant in grants)
-        {
-            if (string.IsNullOrWhiteSpace(grant.CardId) || grant.Count <= 0)
-            {
-                continue;
-            }
 
-            var key = (grant.CardId, grant.Rarity);
-            merged[key] = merged.TryGetValue(key, out var card)
-                ? card with { Count = card.Count + grant.Count }
-                : new OwnedCard(grant.CardId, grant.Rarity, grant.Count);
-        }
-
-        return merged.Values
-            .OrderBy(card => card.CardId, StringComparer.Ordinal)
-            .ThenBy(card => card.Rarity)
-            .ToList();
-    }
-
-    private static PlayerResponse ToPlayerResponse(PlayerProfile profile) => new(
-        profile.UserId,
-        profile.Nickname,
-        profile.AvatarId,
-        profile.OwnedAvatarIds.ToArray(),
-        profile.BackgroundId,
-        profile.OwnedBackgroundIds.ToArray(),
-        profile.OwnedCards.ToArray(),
-        profile.Gold,
-        profile.Revision,
-        profile.CreatedAt,
-        profile.UpdatedAt,
-        profile.AvatarFrameId,
-        profile.OwnedAvatarFrameIds.ToArray());
 }
 
 public static class InboxKinds

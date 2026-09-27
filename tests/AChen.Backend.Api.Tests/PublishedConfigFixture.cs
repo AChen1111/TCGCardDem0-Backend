@@ -8,6 +8,7 @@ namespace AChen.Backend.Api.Tests;
 
 internal sealed class PublishedConfigFixture(ApiFactory factory)
 {
+    public Dictionary<string, byte[]> EconomyTables { get; } = SourceFiles().Where(x => x.Key == "card-crafting" || x.Key == "card-recycling").ToDictionary(x => x.Key, x => x.Value);
     public PublishedGameConfig Data { get; } = GameConfigTables.Assemble(SourceFiles());
     public string AppVersion { get; } = "0.1.0";
     public Guid? ReleaseId { get; private set; }
@@ -32,6 +33,8 @@ internal sealed class PublishedConfigFixture(ApiFactory factory)
     }
     public Dictionary<string, byte[]> Files() => new()
     {
+        ["card-crafting"] = EconomyTables["card-crafting"],
+        ["card-recycling"] = EconomyTables["card-recycling"],
         ["avatar-frames"] = GameConfigTables.FromRows(Data.Catalog.AvatarFrames).Encode(),
         ["avatars"] = GameConfigTables.FromRows(Data.Catalog.Avatars).Encode(),
         ["wallpapers"] = GameConfigTables.FromRows(Data.Catalog.Wallpapers).Encode(),

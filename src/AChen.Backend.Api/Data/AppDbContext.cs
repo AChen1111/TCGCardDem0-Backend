@@ -97,6 +97,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                         value => value.Aggregate(0, (hash, card) => HashCode.Combine(hash, card.CardId, card.Rarity, card.Count)),
                         value => value.ToList()))
                 .HasColumnType("TEXT");
+            profile.Property(value => value.Ur).HasDefaultValue(0L);
             profile.Property(value => value.Revision).IsConcurrencyToken();
             profile.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
             profile.Property(value => value.UpdatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();

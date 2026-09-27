@@ -121,6 +121,9 @@ public sealed class SocialEndpointsTests(ApiFactory factory) : IClassFixture<Api
     public async Task Admin_gift_can_be_claimed_once_and_grants_gold_and_cards()
     {
         var (playerClient, before) = await CreateAuthenticatedClientAsync("SocGiftP");
+        var configuration = new PublishedConfigFixture(factory);
+        await configuration.PublishAsync();
+        configuration.Attach(playerClient);
 
         using var publisher = factory.CreateClient();
         publisher.DefaultRequestHeaders.Add("X-Content-Publish-Key", ApiFactory.PublishKey);
@@ -152,7 +155,8 @@ public sealed class SocialEndpointsTests(ApiFactory factory) : IClassFixture<Api
             expectedRevision = before.Revision
         });
         claim.EnsureSuccessStatusCode();
-        var after = await claim.Content.ReadFromJsonAsync<PlayerPayload>();
+        var claimed = await claim.Content.ReadFromJsonAsync<AChen.Backend.Api.Features.Social.ClaimGiftResponse>();
+        var after = claimed!.Player;
         Assert.NotNull(after);
         Assert.Equal(before.Gold + 250, after.Gold);
         Assert.Equal(before.Revision + 1, after.Revision);

@@ -1,3 +1,4 @@
+using AChen.Configuration;
 using AChen.Backend.Api.Infrastructure;
 using AChen.Backend.Api.Features.Gacha;
 using AChen.Backend.Api.Features.ContentDelivery;
@@ -217,7 +218,8 @@ public sealed class PlayerService(
                 "一次抽取数量须为 1-10");
         }
 
-        var published = (await configReader.GetAsync(cancellationToken)).Catalog;
+        var configuration = await configReader.GetAsync(cancellationToken);
+        var published = configuration.Catalog;
         var now = timeProvider.GetUtcNow();
         var pack = published.CardPacks.FirstOrDefault(value => value.Id == request.PackId);
         if (pack is null || !IsOnSale(pack.IsEnabled, pack.StartsAt, pack.EndsAt, now))
@@ -252,8 +254,11 @@ public sealed class PlayerService(
         }
 
         var draws = await gachaService.DrawAsync(pack.PoolKey, request.Count, cancellationToken);
+        var settlement = CardInventorySettlement.Grant(profile.OwnedCards, draws.Select(x => new OwnedCard(x.CardId, x.Rarity, 1)), CardEconomyConfiguration.From(configuration));
+        long ur = CardInventorySettlement.AddUr(profile.Ur, settlement.UrGained);
         profile.Gold -= pack.PriceGold;
-        profile.OwnedCards = MergeOwnedCards(profile.OwnedCards, draws);
+        profile.OwnedCards = settlement.Cards;
+        profile.Ur = ur;
         profile.Revision++;
         profile.UpdatedAt = now;
         try
@@ -275,7 +280,7 @@ public sealed class PlayerService(
             profile.Revision,
             configReader.ReleaseId);
         return new DrawCardsResponse(
-            draws.Select(value => new CardDrawResultResponse(value.CardId, value.Rarity, value.SourcePool)).ToArray(),
+            draws.Select((value, i) => new CardDrawResultResponse(value.CardId, value.Rarity, value.SourcePool, settlement.Results[i].Overflow > 0, settlement.Results[i].Ur)).ToArray(),
             ToResponse(profile));
     }
 
@@ -317,27 +322,7 @@ public sealed class PlayerService(
             "INVALID_ACCESS_TOKEN",
             "登录状态已失效，请重新登录");
 
-    private static List<OwnedCard> MergeOwnedCards(
-        IEnumerable<OwnedCard> existing,
-        IReadOnlyList<GachaDrawResult> draws)
-    {
-        var merged = existing.ToDictionary(value => (value.CardId, value.Rarity));
-        for (var i = 0; i < draws.Count; i++)
-        {
-            var draw = draws[i];
-            var key = (draw.CardId, draw.Rarity);
-            merged[key] = merged.TryGetValue(key, out var card)
-                ? card with { Count = card.Count + 1 }
-                : new OwnedCard(draw.CardId, draw.Rarity, 1);
-        }
-
-        return merged.Values
-            .OrderBy(value => value.CardId, StringComparer.Ordinal)
-            .ThenBy(value => value.Rarity)
-            .ToList();
-    }
-
-    private static PlayerResponse ToResponse(PlayerProfile profile) => new(
+    internal static PlayerResponse ToResponse(PlayerProfile profile) => new(
         profile.UserId,
         profile.Nickname,
         profile.AvatarId,
@@ -350,7 +335,8 @@ public sealed class PlayerService(
         profile.CreatedAt,
         profile.UpdatedAt,
         profile.AvatarFrameId,
-        profile.OwnedAvatarFrameIds.ToArray());
+        profile.OwnedAvatarFrameIds.ToArray(),
+        profile.Ur);
 
     private static ApiException Changed() =>
         new(StatusCodes.Status409Conflict, "PLAYER_DATA_CHANGED", "玩家数据已发生变化，请刷新后重试");
