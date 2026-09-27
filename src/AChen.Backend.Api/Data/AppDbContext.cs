@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AChen.Backend.Api.Features.Auth;
+using AChen.Backend.Api.Features.Decks;
 using AChen.Backend.Api.Features.ContentDelivery;
 using AChen.Backend.Api.Features.Players;
 using AChen.Backend.Api.Features.Social;
@@ -13,6 +14,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<CurrentContent> CurrentContents => Set<CurrentContent>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<PlayerDeck> PlayerDecks => Set<PlayerDeck>();
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
     public DbSet<PlayerProfile> PlayerProfiles => Set<PlayerProfile>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
@@ -21,6 +23,19 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<PlayerDeck>(deck =>
+        {
+            deck.HasKey(x => x.Id);
+            deck.Property(x => x.Name).HasMaxLength(64).IsRequired();
+            deck.Property(x => x.MainDeckJson).HasColumnName("MainDeck").IsRequired();
+            deck.Property(x => x.ExtraDeckJson).HasColumnName("ExtraDeck").IsRequired();
+            deck.Property(x => x.Revision).IsConcurrencyToken();
+            deck.Property(x => x.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            deck.Property(x => x.UpdatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
+            deck.HasIndex(x => x.UserId);
+            deck.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<User>(user =>
         {
             user.HasKey(value => value.Id);

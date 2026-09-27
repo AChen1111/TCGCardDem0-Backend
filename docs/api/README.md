@@ -29,6 +29,11 @@
 | PATCH | `/api/player/profile` | Bearer | 改昵称、当前头像和背景；不能改金币或已拥有列表 |
 | POST | `/api/player/purchase` | Bearer | 购买头像或壁纸；价格由已发布配置计算 |
 | POST | `/api/player/card-draws` | Bearer | 服务端抽卡；先按卡池权重抽卡，再按全局稀有度权重掷 shader |
+| GET | `/api/player/decks` | Bearer | 查询当前账号的卡组列表 |
+| GET | `/api/player/decks/{id}` | Bearer | 查询当前账号的单套卡组 |
+| POST | `/api/player/decks` | Bearer | 创建空卡组草稿 |
+| PUT | `/api/player/decks/{id}` | Bearer | 按版本原子替换卡组名称和内容 |
+| DELETE | `/api/player/decks/{id}?expectedRevision=…` | Bearer | 删除指定版本的卡组 |
 | GET | `/api/gacha/admin/config` | Publish Key | 查看当前抽卡卡池与稀有度权重 |
 | PUT | `/api/gacha/admin/config` | Publish Key | 上传 CSV，整表替换抽卡配置并立即生效 |
 | GET | `/api/gacha/admin/cards` | Publish Key | 查看全部卡牌目录 |
@@ -171,6 +176,29 @@
 
 上传 ZIP 时可附加 `X-Artifact-Sha256`。Content-Type 必须是 `application/zip`。
 
+## 卡组存储
+
+创建请求：`{ "name": "青眼" }`，成功返回 `201`、`Location` 和卡组对象。名称去除首尾空白后须为 1–64 字符且不含控制字符，允许重名。初始主卡、额外均为空数组，`revision` 为 0。
+
+卡组对象包含 `id`、`name`、`mainDeck`、`extraDeck`、`revision`、`createdAt`、`updatedAt`。列表接口返回当前账号的卡组数组，按创建时间和 ID 排序。卡组独立保存，不包含在玩家 bootstrap 中。
+
+保存请求示例：
+
+```json
+{
+  "name": "青眼卡组",
+  "mainDeck": [{ "cardId": "89631139", "rarity": 0, "count": 3 }],
+  "extraDeck": [{ "cardId": "01639384", "rarity": 1, "count": 1 }],
+  "expectedRevision": 0
+}
+```
+
+保存成功返回 `200` 和新卡组对象，版本递增。删除必须携带 `expectedRevision` 查询参数，成功返回 `204`。每套卡组使用独立版本，不修改玩家资料版本、金币或收藏。
+
+**本阶段后端不执行组卡规则。** 客户端负责主卡 40–60、额外 0–15、CardId 合计上限、禁限表、卡牌分类和持有量检查。服务端仅检查鉴权、账号归属、请求结构和版本：两个分区数组必填且条目不能为 null，`cardId` 为非空字符串（最多 128 字符且无控制字符），`rarity` 非负，`count` 为正整数，`expectedRevision` 必填且非负。即使是未知卡牌、超过组卡上限或禁卡，结构有效也可存储。创建、保存请求体上限沿用 16 KiB。
+
+账号归属从 Bearer 凭证确定，不接受请求体指定账号。不存在或属于其他账号的卡组均返回 `404 DECK_NOT_FOUND`；过期或并发冲突返回 `409 DECK_DATA_CHANGED`，不会覆盖原内容；结构错误返回 `422 VALIDATION_ERROR`。客户端应重新读取冲突卡组，不自动重放保存请求。
+
 ## 错误码
 
 响应体形如：
@@ -198,6 +226,8 @@
 | `INVALID_REFRESH_TOKEN` | 401 | Refresh Token 无效、过期或已轮换 |
 | `INVALID_CONTENT_PUBLISH_KEY` | 401 | 发布密钥错误 |
 | `PLAYER_DATA_CHANGED` | 409 | `expectedRevision` 与当前玩家资料不一致 |
+| `DECK_DATA_CHANGED` | 409 | 卡组版本过期或发生并发修改 |
+| `DECK_NOT_FOUND` | 404 | 卡组不存在或不属于当前账号 |
 | `AVATAR_NOT_OWNED` / `WALLPAPER_NOT_OWNED` | 422 | 装备了未拥有的外观 |
 | `AVATAR_NOT_AVAILABLE` / `WALLPAPER_NOT_AVAILABLE` | 422 | 外观不存在、未启用或不在售卖窗口 |
 | `ITEM_ALREADY_OWNED` | 422 | 重复购买 |

@@ -6,6 +6,7 @@ using AChen.Backend.Api.Features.Auth;
 using AChen.Backend.Api.Features.ContentDelivery;
 using AChen.Backend.Api.Features.Gacha;
 using AChen.Backend.Api.Features.Players;
+using AChen.Backend.Api.Features.Decks;
 using AChen.Backend.Api.Features.Social;
 using AChen.Backend.Api.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
@@ -274,6 +275,7 @@ app.MapGet("/ready", async (AppDbContext db, CancellationToken cancellationToken
         : Results.StatusCode(StatusCodes.Status503ServiceUnavailable));
 app.MapAuthEndpoints();
 app.MapPlayerEndpoints();
+app.MapDeckEndpoints();
 app.MapSocialEndpoints();
 app.MapAccountManagementEndpoints();
 app.MapContentEndpoints();
