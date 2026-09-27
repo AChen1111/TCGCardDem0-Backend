@@ -73,6 +73,13 @@ public sealed class CardEconomyTests(ApiFactory factory) : IClassFixture<ApiFact
             var loaded = (await client.GetFromJsonAsync<PlayerResponse>("/api/player/bootstrap"))!;
             Assert.Equal(after.Ur, loaded.Ur);
             Assert.Equal(after.Revision, loaded.Revision);
+            var relogin = await client.PostAsJsonAsync("/api/auth/login", new { username, password = "correct-horse-42" });
+            relogin.EnsureSuccessStatusCode();
+            var login = await relogin.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal(after.Ur, login.GetProperty("player").GetProperty("ur").GetInt64());
+            var refresh = await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = login.GetProperty("refreshToken").GetString() });
+            refresh.EnsureSuccessStatusCode();
+            Assert.Equal(after.Ur, (await refresh.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("player").GetProperty("ur").GetInt64());
         }
     }
 
