@@ -16,6 +16,8 @@ public static class PlayerValidation
             errors["avatarId"] = ["头像 ID 不能为负数"];
         }
 
+        if (request.AvatarFrameId is < 0) errors["avatarFrameId"] = ["头像框 ID 不能为负数"];
+
         if (request.BackgroundId is < 0)
         {
             errors["backgroundId"] = ["背景 ID 不能为负数"];
@@ -33,9 +35,9 @@ public static class PlayerValidation
     {
         var errors = new Dictionary<string, string[]>();
         var catalogType = request.CatalogType?.Trim() ?? "";
-        if (catalogType is not (ShopCatalogTypes.Avatar or ShopCatalogTypes.Wallpaper))
+        if (catalogType is not (ShopCatalogTypes.Avatar or ShopCatalogTypes.AvatarFrame or ShopCatalogTypes.Wallpaper))
         {
-            errors["catalogType"] = ["商品类型只能是 avatar 或 wallpaper"];
+            errors["catalogType"] = ["商品类型只能是 avatar、avatar-frame 或 wallpaper"];
         }
 
         if (request.ItemId < 0)

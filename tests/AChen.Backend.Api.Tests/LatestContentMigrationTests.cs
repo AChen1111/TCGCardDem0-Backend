@@ -21,14 +21,14 @@ public sealed class LatestContentMigrationTests
         var user = new User { Username = "migration", NormalizedUsername = "MIGRATION", PasswordHash = "preserved",
             CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
         db.Users.Add(user);
-        db.PlayerProfiles.Add(new PlayerProfile { UserId = user.Id, Nickname = "preserve", Gold = 12345,
-            OwnedAvatarIds = [0, 2] });
         await db.SaveChangesAsync();
+        // 历史数据库尚无头像框字段，按当时的列写入测试数据。
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO PlayerProfiles (UserId,Nickname,AvatarId,OwnedAvatarIds,BackgroundId,OwnedBackgroundIds,OwnedCards,Gold,Revision,CreatedAt,UpdatedAt) VALUES ({user.Id},'preserve',0,'[0,2]',1,'[1]','[]',12345,0,0,0)");
         await db.Database.ExecuteSqlRawAsync("INSERT INTO ContentReleases (Id,Platform,AppVersion,ContentVersion,State,FileCount,TotalBytes,CreatedAt,UpdatedAt) VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','Android','0.1.0','1.0.0','Ready',0,0,0,0)");
-        await migrator.MigrateAsync();
+        await migrator.MigrateAsync("20260926000000_LatestDevelopmentContent");
         db.ChangeTracker.Clear();
         Assert.Equal("preserved", (await db.Users.SingleAsync()).PasswordHash);
-        var player = await db.PlayerProfiles.SingleAsync();
+        var player = await db.PlayerProfiles.Select(value => new { value.Gold, value.OwnedAvatarIds }).SingleAsync();
         Assert.Equal(12345, player.Gold);
         Assert.Equal(new[] { 0, 2 }, player.OwnedAvatarIds);
         Assert.Empty(await db.CurrentContents.ToListAsync());

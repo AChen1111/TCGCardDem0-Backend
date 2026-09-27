@@ -21,6 +21,7 @@ public sealed class SocialEndpointsTests(ApiFactory factory) : IClassFixture<Api
 
         Assert.NotNull(hits);
         Assert.Contains(hits, hit => hit.Id == bobPlayer.Id && hit.Nickname == "SocSearchB" && !hit.IsFriend);
+        Assert.Equal(bobPlayer.AvatarFrameId, hits.Single(hit => hit.Id == bobPlayer.Id).AvatarFrameId);
         Assert.DoesNotContain(hits, hit => hit.Nickname == "SocSearchA");
     }
 
@@ -68,6 +69,7 @@ public sealed class SocialEndpointsTests(ApiFactory factory) : IClassFixture<Api
             item.Kind == InboxKinds.FriendRequest &&
             item.Id == request.Id &&
             item.PlayerId == alicePlayer.Id);
+        Assert.Equal(alicePlayer.AvatarFrameId, inbox.Single(item => item.Id == request.Id).AvatarFrameId);
 
         var accept = await bob.PostAsync($"/api/friends/requests/{request.Id}/accept", null);
         accept.EnsureSuccessStatusCode();
@@ -78,6 +80,7 @@ public sealed class SocialEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.NotNull(bobFriends);
         Assert.Contains(aliceFriends, friend => friend.Id == bobPlayer.Id && friend.Nickname == "SocAccB");
         Assert.Contains(bobFriends, friend => friend.Id == alicePlayer.Id && friend.Nickname == "SocAccA");
+        Assert.Equal(bobPlayer.AvatarFrameId, aliceFriends.Single(friend => friend.Id == bobPlayer.Id).AvatarFrameId);
 
         var search = await alice.GetFromJsonAsync<List<FriendSearchHit>>("/api/friends/search?nickname=SocAccB");
         Assert.NotNull(search);
@@ -213,5 +216,6 @@ public sealed class SocialEndpointsTests(ApiFactory factory) : IClassFixture<Api
         IReadOnlyList<int> OwnedBackgroundIds,
         IReadOnlyList<OwnedCard> OwnedCards,
         long Gold,
-        long Revision);
+        long Revision,
+        int AvatarFrameId);
 }

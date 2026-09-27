@@ -4,12 +4,15 @@ namespace AChen.Backend.Api.Features.Players;
 
 public sealed class PlayerProfile
 {
-    public const int DefaultAvatarId = 0;
+    public const int DefaultAvatarId = 1010001;
+    public const int DefaultAvatarFrameId = 1030001;
     public const int DefaultBackgroundId = 1;
 
     public Guid UserId { get; init; }
     public required string Nickname { get; set; }
     public int? AvatarId { get; set; }
+    public int AvatarFrameId { get; set; } = DefaultAvatarFrameId;
+    public List<int> OwnedAvatarFrameIds { get; set; } = [DefaultAvatarFrameId];
     public List<int> OwnedAvatarIds { get; set; } = [];
     public int? BackgroundId { get; set; }
     public List<int> OwnedBackgroundIds { get; set; } = [];

@@ -28,7 +28,7 @@ public sealed class SocialService(
             .AsNoTracking()
             .Where(profile => friendIds.Contains(profile.UserId))
             .OrderBy(profile => profile.Nickname)
-            .Select(profile => new FriendSummary(profile.UserId, profile.Nickname, profile.AvatarId))
+            .Select(profile => new FriendSummary(profile.UserId, profile.Nickname, profile.AvatarId, profile.AvatarFrameId))
             .ToListAsync(cancellationToken);
         return profiles;
     }
@@ -53,7 +53,7 @@ public sealed class SocialService(
                 EF.Functions.Like(profile.Nickname, pattern, "\\"))
             .OrderBy(profile => profile.Nickname)
             .Take(SearchLimit)
-            .Select(profile => new { profile.UserId, profile.Nickname, profile.AvatarId })
+            .Select(profile => new { profile.UserId, profile.Nickname, profile.AvatarId, profile.AvatarFrameId })
             .ToListAsync(cancellationToken);
 
         var friendIds = await LoadFriendIdsAsync(userId, cancellationToken);
@@ -64,7 +64,7 @@ public sealed class SocialService(
                 hit.Nickname,
                 hit.AvatarId,
                 friendIds.Contains(hit.UserId),
-                pendingIds.Contains(hit.UserId)))
+                pendingIds.Contains(hit.UserId), hit.AvatarFrameId))
             .ToList();
     }
 
@@ -220,7 +220,7 @@ public sealed class SocialService(
                 from?.Nickname,
                 from?.AvatarId,
                 0,
-                []));
+                [], AvatarFrameId: from?.AvatarFrameId));
         }
 
         foreach (var gift in gifts)
@@ -537,7 +537,9 @@ public sealed class SocialService(
         profile.Gold,
         profile.Revision,
         profile.CreatedAt,
-        profile.UpdatedAt);
+        profile.UpdatedAt,
+        profile.AvatarFrameId,
+        profile.OwnedAvatarFrameIds.ToArray());
 }
 
 public static class InboxKinds

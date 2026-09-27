@@ -28,12 +28,13 @@ public sealed class GameConfigMigrationTests
                 await db.Database.ExecuteSqlRawAsync(ProfileInsertSql(legacyUser, "avatar.default"));
                 await migrator.MigrateAsync("20260902150000_PlayerOwnedAvatarIds");
                 await db.Database.ExecuteSqlRawAsync("UPDATE PlayerProfiles SET BackgroundId = 1");
-                await migrator.MigrateAsync();
+                await migrator.MigrateAsync("20260926000000_LatestDevelopmentContent");
             }
 
             await using (var db = new AppDbContext(options))
             {
-                var profiles = await db.PlayerProfiles.OrderBy(value => value.Nickname).ToArrayAsync();
+                var profiles = await db.PlayerProfiles.OrderBy(value => value.Nickname)
+                    .Select(value => new { value.Nickname, value.AvatarId, value.OwnedBackgroundIds }).ToArrayAsync();
                 Assert.Equal(2, profiles.Length);
                 Assert.Null(profiles.Single(value => value.Nickname == "legacy").AvatarId);
                 Assert.Equal(42, profiles.Single(value => value.Nickname == "numeric").AvatarId);

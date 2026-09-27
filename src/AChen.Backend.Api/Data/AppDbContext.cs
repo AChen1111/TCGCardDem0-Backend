@@ -70,6 +70,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                         value => value.Aggregate(0, (hash, id) => HashCode.Combine(hash, id)),
                         value => value.ToList()))
                 .HasColumnType("TEXT");
+            profile.Property(value => value.OwnedAvatarFrameIds)
+                .HasConversion(
+                    value => JsonSerializer.Serialize(value, JsonSerializerOptions.Default),
+                    value => JsonSerializer.Deserialize<List<int>>(value, JsonSerializerOptions.Default)!,
+                    new ValueComparer<List<int>>(
+                        (left, right) => left!.SequenceEqual(right!),
+                        value => value.Aggregate(0, (hash, id) => HashCode.Combine(hash, id)),
+                        value => value.ToList()))
+                .HasColumnType("TEXT");
             profile.Property(value => value.OwnedBackgroundIds)
                 .HasConversion(
                     value => JsonSerializer.Serialize(value, JsonSerializerOptions.Default),

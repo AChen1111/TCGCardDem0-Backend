@@ -26,8 +26,8 @@
 | POST | `/api/auth/logout` | 无 | 吊销 Refresh Token |
 | GET | `/api/auth/me` | Bearer | 当前用户 |
 | GET | `/api/player/bootstrap` | Bearer | 当前玩家（头像、壁纸、卡牌收藏、金币、已拥有列表） |
-| PATCH | `/api/player/profile` | Bearer | 改昵称、当前头像和背景；不能改金币或已拥有列表 |
-| POST | `/api/player/purchase` | Bearer | 购买头像或壁纸；价格由已发布配置计算 |
+| PATCH | `/api/player/profile` | Bearer | 改昵称、当前头像、头像框和背景；不能改金币或已拥有列表 |
+| POST | `/api/player/purchase` | Bearer | 购买头像、头像框或壁纸；价格由已发布配置计算 |
 | POST | `/api/player/card-draws` | Bearer | 服务端抽卡；先按卡池权重抽卡，再按全局稀有度权重掷 shader |
 | GET | `/api/player/decks` | Bearer | 查询当前账号的卡组列表 |
 | GET | `/api/player/decks/{id}` | Bearer | 查询当前账号的单套卡组 |
@@ -83,7 +83,7 @@
 }
 ```
 
-玩家数据含 `avatarId`、`ownedAvatarIds`、`backgroundId`、`ownedBackgroundIds`、`ownedCards`、`gold`、`revision`。`ownedCards` 每项为 `{ cardId, rarity, count }`，`cardId` 为字符串，同一卡牌不同稀有度分开堆叠。注册默认昵称等于账号、`avatarId` 为 0、`backgroundId` 为 1，并拥有头像 0 与壁纸 1，`ownedCards` 为空，`gold` 为 0。`PATCH /api/player/profile` 只能装备已拥有且已发布在售的头像或壁纸。
+玩家数据含 `avatarId`、`ownedAvatarIds`、`avatarFrameId`、`ownedAvatarFrameIds`、`backgroundId`、`ownedBackgroundIds`、`ownedCards`、`gold`、`revision`。`ownedCards` 每项为 `{ cardId, rarity, count }`，`cardId` 为字符串，同一卡牌不同稀有度分开堆叠。注册默认昵称等于账号、`avatarId` 为 1010001，`avatarFrameId` 为 1030001、`backgroundId` 为 1，并拥有头像 1010001、头像框 1030001 与壁纸 1，`ownedCards` 为空，`gold` 为 0。`PATCH /api/player/profile` 只能装备已拥有且已发布在售的头像或壁纸。
 
 抽卡：
 
@@ -265,3 +265,13 @@
 | `GIT_COMMIT_INVALID` | 422 | 提交标识无效 |
 | `GIT_SNAPSHOT_INVALID` | 422 | 快照无法还原为草稿 |
 | `GIT_COMMAND_FAILED` | 503 | git 命令失败 |
+
+## 头像框
+
+`PATCH /api/player/profile` 支持 `avatarFrameId`，只能装备已拥有且启用的框；省略该字段保留当前框。`POST /api/player/purchase` 使用 `catalogType: "avatar-frame"`，价格来自已发布的 `avatar-frames` 配置。好友列表、搜索结果和好友申请均返回头像框编号。
+
+```json
+{"catalogType":"avatar-frame","itemId":1030002,"expectedRevision":0}
+```
+
+`PlayerAvatarFrames` 一次性迁移将旧玩家头像和拥有头像重置为 1010001，赠送并装备头像框 1030001；不会重置金币、壁纸或卡牌。配置、客户端与服务端需要配套发布。

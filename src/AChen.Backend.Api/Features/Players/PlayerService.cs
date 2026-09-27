@@ -59,6 +59,13 @@ public sealed class PlayerService(
             }
         }
 
+        if (request.AvatarFrameId is int frameId && frameId != profile.AvatarFrameId)
+        {
+            var frame = (await configReader.GetAsync(cancellationToken)).Catalog.AvatarFrames.SingleOrDefault(x => x.Id == frameId && x.IsEnabled);
+            if (frame is null) throw new ApiException(422, "AVATAR_FRAME_NOT_AVAILABLE", "该头像框不存在或尚未启用");
+            if (!profile.OwnedAvatarFrameIds.Contains(frameId)) throw new ApiException(422, "AVATAR_FRAME_NOT_OWNED", "尚未拥有该头像框");
+            profile.AvatarFrameId = frameId;
+        }
         profile.Nickname = request.Nickname.Trim();
         profile.AvatarId = request.AvatarId;
         profile.BackgroundId = request.BackgroundId;
@@ -108,6 +115,13 @@ public sealed class PlayerService(
 
             priceGold = avatar.PriceGold;
         }
+        else if (catalogType == ShopCatalogTypes.AvatarFrame)
+        {
+            var frame = published.AvatarFrames.SingleOrDefault(x => x.Id == request.ItemId);
+            if (frame is null || !IsOnSale(frame.IsEnabled, frame.StartsAt, frame.EndsAt, now))
+                throw new ApiException(422, "AVATAR_FRAME_NOT_AVAILABLE", "该头像框不存在或尚未启用");
+            priceGold = frame.PriceGold;
+        }
         else
         {
             var wallpaper = published.Wallpapers.FirstOrDefault(value => value.Id == request.ItemId);
@@ -130,6 +144,7 @@ public sealed class PlayerService(
 
         var alreadyOwned = catalogType == ShopCatalogTypes.Avatar
             ? profile.OwnedAvatarIds.Contains(request.ItemId)
+            : catalogType == ShopCatalogTypes.AvatarFrame ? profile.OwnedAvatarFrameIds.Contains(request.ItemId)
             : profile.OwnedBackgroundIds.Contains(request.ItemId);
         if (alreadyOwned)
         {
@@ -151,6 +166,10 @@ public sealed class PlayerService(
         if (catalogType == ShopCatalogTypes.Avatar)
         {
             profile.OwnedAvatarIds = profile.OwnedAvatarIds.Append(request.ItemId).OrderBy(value => value).ToList();
+        }
+        else if (catalogType == ShopCatalogTypes.AvatarFrame)
+        {
+            profile.OwnedAvatarFrameIds = profile.OwnedAvatarFrameIds.Append(request.ItemId).OrderBy(x => x).ToList();
         }
         else
         {
@@ -329,7 +348,9 @@ public sealed class PlayerService(
         profile.Gold,
         profile.Revision,
         profile.CreatedAt,
-        profile.UpdatedAt);
+        profile.UpdatedAt,
+        profile.AvatarFrameId,
+        profile.OwnedAvatarFrameIds.ToArray());
 
     private static ApiException Changed() =>
         new(StatusCodes.Status409Conflict, "PLAYER_DATA_CHANGED", "玩家数据已发生变化，请刷新后重试");

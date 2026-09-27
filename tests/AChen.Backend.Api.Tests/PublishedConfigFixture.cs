@@ -32,6 +32,7 @@ internal sealed class PublishedConfigFixture(ApiFactory factory)
     }
     public Dictionary<string, byte[]> Files() => new()
     {
+        ["avatar-frames"] = GameConfigTables.FromRows(Data.Catalog.AvatarFrames).Encode(),
         ["avatars"] = GameConfigTables.FromRows(Data.Catalog.Avatars).Encode(),
         ["wallpapers"] = GameConfigTables.FromRows(Data.Catalog.Wallpapers).Encode(),
         ["card-packs"] = GameConfigTables.FromRows(Data.Catalog.CardPacks).Encode(),

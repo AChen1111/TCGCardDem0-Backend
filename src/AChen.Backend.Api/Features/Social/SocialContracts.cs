@@ -2,9 +2,9 @@ using AChen.Backend.Api.Features.Players;
 
 namespace AChen.Backend.Api.Features.Social;
 
-public sealed record FriendSummary(Guid Id, string Nickname, int? AvatarId);
+public sealed record FriendSummary(Guid Id, string Nickname, int? AvatarId, int AvatarFrameId);
 
-public sealed record FriendSearchHit(Guid Id, string Nickname, int? AvatarId, bool IsFriend, bool IsPending = false);
+public sealed record FriendSearchHit(Guid Id, string Nickname, int? AvatarId, bool IsFriend, bool IsPending, int AvatarFrameId);
 
 public sealed record CreateFriendRequestBody(Guid TargetPlayerId);
 
@@ -19,7 +19,7 @@ public sealed record InboxItem(
     int? AvatarId,
     long Gold,
     IReadOnlyList<OwnedCard> Cards,
-    string? TitleKey = null);
+    string? TitleKey = null, int? AvatarFrameId = null);
 
 public sealed record ClaimGiftRequest(long ExpectedRevision);
 

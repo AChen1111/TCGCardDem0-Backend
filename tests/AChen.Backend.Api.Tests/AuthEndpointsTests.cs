@@ -25,7 +25,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory) : IClassFixture<ApiFa
         Assert.False(string.IsNullOrWhiteSpace(auth.RefreshToken));
         Assert.NotNull(auth.Player);
         Assert.Equal("NewPlayer", auth.Player.Nickname);
-        Assert.Equal(0, auth.Player.AvatarId);
+        Assert.Equal(1010001, auth.Player.AvatarId);
         Assert.Equal(1, auth.Player.BackgroundId);
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);

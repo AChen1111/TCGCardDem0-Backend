@@ -4,11 +4,13 @@ public sealed record UpdatePlayerProfileRequest(
     string Nickname,
     int? AvatarId,
     int? BackgroundId,
-    long ExpectedRevision);
+    long ExpectedRevision,
+    int? AvatarFrameId = null);
 
 public static class ShopCatalogTypes
 {
     public const string Avatar = "avatar";
+    public const string AvatarFrame = "avatar-frame";
     public const string Wallpaper = "wallpaper";
 }
 
@@ -40,4 +42,6 @@ public sealed record PlayerResponse(
     long Gold,
     long Revision,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    int AvatarFrameId,
+    IReadOnlyList<int> OwnedAvatarFrameIds);

@@ -36,8 +36,8 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.NotNull(player);
         Assert.NotEqual(Guid.Empty, player.Id);
         Assert.Equal("BasicPlayer", player.Nickname);
-        Assert.Equal(0, player.AvatarId);
-        Assert.Equal(new[] { 0 }, player.OwnedAvatarIds);
+        Assert.Equal(1010001, player.AvatarId);
+        Assert.Equal(new[] { 1010001 }, player.OwnedAvatarIds);
         Assert.Equal(1, player.BackgroundId);
         Assert.Equal(new[] { 1 }, player.OwnedBackgroundIds);
         Assert.Empty(player.OwnedCards);
@@ -70,7 +70,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.NotNull(updated);
         Assert.Equal("新昵称", updated.Nickname);
         Assert.Equal(2002, updated.AvatarId);
-        Assert.Equal(new[] { 0, 2002 }, updated.OwnedAvatarIds);
+        Assert.Equal(new[] { 1010001, 2002 }, updated.OwnedAvatarIds);
         Assert.Equal(1, updated.BackgroundId);
         Assert.Equal(0, updated.Gold);
         Assert.Equal(initial.Revision + 1, updated.Revision);
@@ -101,7 +101,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         var response = await client.PatchAsJsonAsync("/api/player/profile", new
         {
             nickname = "Valid Name",
-            avatarId = 0,
+            avatarId = 1010001,
             backgroundId = 3,
             expectedRevision = 0
         });
@@ -172,8 +172,8 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
 
         Assert.NotNull(purchased);
         Assert.Equal(120, purchased.Gold);
-        Assert.Equal(0, purchased.AvatarId);
-        Assert.Equal(new[] { 0, avatarId }, purchased.OwnedAvatarIds);
+        Assert.Equal(1010001, purchased.AvatarId);
+        Assert.Equal(new[] { avatarId, 1010001 }, purchased.OwnedAvatarIds);
         Assert.Equal(initial.Revision + 1, purchased.Revision);
     }
 
@@ -224,7 +224,7 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
         var current = await client.GetFromJsonAsync<PlayerPayload>("/api/player/bootstrap");
         Assert.NotNull(current);
         Assert.Equal(0, current.Gold);
-        Assert.Equal(new[] { 0 }, current.OwnedAvatarIds);
+        Assert.Equal(new[] { 1010001 }, current.OwnedAvatarIds);
     }
 
     [Fact]

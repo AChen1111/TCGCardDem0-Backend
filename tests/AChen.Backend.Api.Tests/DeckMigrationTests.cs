@@ -21,17 +21,14 @@ public sealed class DeckMigrationTests
         var now = DateTimeOffset.UtcNow;
         var user = new User { Username = "DeckMigration", NormalizedUsername = "DECKMIGRATION", PasswordHash = "preserved",
             CreatedAt = now, UpdatedAt = now };
-        var player = PlayerProfile.ForNewAccount(user.Id, user.Username, now);
-        player.OwnedCards = [new OwnedCard("01639384", 1, 3)];
-        player.Gold = 12345;
-        player.Revision = 7;
         db.Users.Add(user);
-        db.PlayerProfiles.Add(player);
         await db.SaveChangesAsync();
-        await migrator.MigrateAsync();
+        // 使用升级前的真实表结构，避免当前实体新增字段影响历史迁移测试。
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO PlayerProfiles (UserId,Nickname,AvatarId,OwnedAvatarIds,BackgroundId,OwnedBackgroundIds,OwnedCards,Gold,Revision,CreatedAt,UpdatedAt) VALUES ({user.Id},'DeckMigration',0,'[0]',1,'[1]','[{{\"CardId\":\"01639384\",\"Rarity\":1,\"Count\":3}}]',12345,7,0,0)");
+        await migrator.MigrateAsync("20260926183745_PlayerDecks");
         db.ChangeTracker.Clear();
         Assert.Equal("preserved", (await db.Users.SingleAsync()).PasswordHash);
-        var saved = await db.PlayerProfiles.SingleAsync();
+        var saved = await db.PlayerProfiles.Select(value => new { value.Gold, value.Revision, value.OwnedCards }).SingleAsync();
         Assert.Equal(12345, saved.Gold);
         Assert.Equal(7, saved.Revision);
         Assert.Equal(new OwnedCard("01639384", 1, 3), Assert.Single(saved.OwnedCards));
