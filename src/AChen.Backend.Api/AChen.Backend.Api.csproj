@@ -17,8 +17,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Shared/**/*.cs" />
-    <Compile Include="../../../Assets/Shared/Configuration/*.cs" Exclude="../../../Assets/Shared/Configuration/ContentSession.cs" Link="Shared/%(Filename)%(Extension)" />
-    <Compile Include="../../../Assets/Shared/Card/Generated/CardRow.cs" Link="Shared/CardRow.cs" />
-    <Compile Include="../../../Assets/Shared/Localization/Generated/TranslationRow.cs" Link="Shared/TranslationRow.cs" />
+    <Compile Include="../../../Assets/Shared/Configuration/*.cs" Link="Shared/%(Filename)%(Extension)" />
+    <Compile Include="../../../Assets/Scripts/Network/GameConfig/BinaryTable.cs;../../../Assets/Scripts/Network/GameConfig/GameConfigTables.cs;../../../Assets/Scripts/Network/GameConfig/PublishedGameConfig.cs;../../../Assets/Scripts/Network/GameConfig/ConfigArtifacts.cs" Link="Shared/%(Filename)%(Extension)" />
+    <Compile Include="../../../Assets/Scripts/Network/GameConfig/Generated/CardRow.cs" Link="Shared/CardRow.cs" />
+    <Compile Include="../../../Assets/Scripts/Localization/Generated/TranslationRow.cs" Link="Shared/TranslationRow.cs" />
   </ItemGroup>
 </Project>
