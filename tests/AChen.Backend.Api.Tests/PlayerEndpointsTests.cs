@@ -445,14 +445,14 @@ public sealed class PlayerEndpointsTests(ApiFactory factory) : IClassFixture<Api
     private async Task EnsurePublishedAvatarAsync(int id, long priceGold = 0)
     {
         config.Data.Catalog.Avatars = config.Data.Catalog.Avatars.Where(x => x.Id != id).Append(
-            new CosmeticData { Id = id, Name = "Avatar " + id, ResourceKey = "Avatar_" + id, PriceGold = priceGold, IsEnabled = true }).ToArray();
+            new CosmeticData { Id = id, Name = "Avatar " + id, NameKey = "shop.avatar." + id, ResourceKey = "Avatar_" + id, PriceGold = priceGold, IsEnabled = true }).ToArray();
         await config.PublishAsync();
     }
 
     private async Task EnsurePublishedWallpaperAsync(int id, long priceGold = 0)
     {
         config.Data.Catalog.Wallpapers = config.Data.Catalog.Wallpapers.Where(x => x.Id != id).Append(
-            new CosmeticData { Id = id, Name = "Wallpaper " + id, ResourceKey = "Wallpaper_" + id, PriceGold = priceGold, IsEnabled = true }).ToArray();
+            new CosmeticData { Id = id, Name = "Wallpaper " + id, NameKey = "shop.wallpaper." + id, ResourceKey = "Wallpaper_" + id, PriceGold = priceGold, IsEnabled = true }).ToArray();
         await config.PublishAsync();
     }
 

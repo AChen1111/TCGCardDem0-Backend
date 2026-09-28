@@ -258,6 +258,8 @@ public sealed class PlayerService(
         long ur = CardInventorySettlement.AddUr(profile.Ur, settlement.UrGained);
         profile.Gold -= pack.PriceGold;
         profile.OwnedCards = settlement.Cards;
+        profile.OwnedArtIds = profile.OwnedArtIds.Concat(draws.Select(x => x.ArtId ?? x.CardId))
+            .Distinct(StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal).ToList();
         profile.Ur = ur;
         profile.Revision++;
         profile.UpdatedAt = now;
@@ -280,7 +282,7 @@ public sealed class PlayerService(
             profile.Revision,
             configReader.ReleaseId);
         return new DrawCardsResponse(
-            draws.Select((value, i) => new CardDrawResultResponse(value.CardId, value.Rarity, value.SourcePool, settlement.Results[i].Overflow > 0, settlement.Results[i].Ur)).ToArray(),
+            draws.Select((value, i) => new CardDrawResultResponse(value.CardId, value.Rarity, value.SourcePool, settlement.Results[i].Overflow > 0, settlement.Results[i].Ur, value.ArtId)).ToArray(),
             ToResponse(profile));
     }
 
@@ -336,7 +338,8 @@ public sealed class PlayerService(
         profile.UpdatedAt,
         profile.AvatarFrameId,
         profile.OwnedAvatarFrameIds.ToArray(),
-        profile.Ur);
+        profile.Ur,
+        profile.OwnedArtIds.ToArray());
 
     private static ApiException Changed() =>
         new(StatusCodes.Status409Conflict, "PLAYER_DATA_CHANGED", "玩家数据已发生变化，请刷新后重试");

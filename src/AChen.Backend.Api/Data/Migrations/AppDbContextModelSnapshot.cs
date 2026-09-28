@@ -189,6 +189,10 @@ namespace AChen.Backend.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("OwnedArtIds")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("Revision")
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");

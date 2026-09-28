@@ -133,7 +133,8 @@ public sealed class SocialEndpointsTests(ApiFactory factory) : IClassFixture<Api
             gold = 250,
             cards = new[]
             {
-                new { cardId = "26077389", count = 2, rarity = 1 }
+                new { cardId = "26077389", count = 2, rarity = 1 },
+                new { cardId = "14558128", count = 2, rarity = 1 }
             }
         });
         grant.EnsureSuccessStatusCode();
@@ -146,9 +147,9 @@ public sealed class SocialEndpointsTests(ApiFactory factory) : IClassFixture<Api
         var gift = Assert.Single(inbox, item => item.Kind == InboxKinds.Gift && item.Id == granted.GiftId);
         Assert.Null(gift.PlayerId);
         Assert.Equal(250, gift.Gold);
-        Assert.Equal("26077389", gift.Cards[0].CardId);
-        Assert.Equal(1, gift.Cards[0].Rarity);
-        Assert.Equal(2, gift.Cards[0].Count);
+        var original = gift.Cards.Single(card => card.CardId == "26077389");
+        Assert.Equal(1, original.Rarity);
+        Assert.Equal(2, original.Count);
 
         var claim = await playerClient.PostAsJsonAsync($"/api/gifts/{granted.GiftId}/claim", new
         {
@@ -161,6 +162,8 @@ public sealed class SocialEndpointsTests(ApiFactory factory) : IClassFixture<Api
         Assert.Equal(before.Gold + 250, after.Gold);
         Assert.Equal(before.Revision + 1, after.Revision);
         Assert.Contains(after.OwnedCards, card => card.CardId == "26077389" && card.Rarity == 1 && card.Count == 2);
+        Assert.Contains(after.OwnedCards, card => card.CardId == "14558127" && card.Rarity == 1 && card.Count == 2);
+        Assert.Contains("14558128", after.OwnedArtIds!);
 
         var emptyInbox = await playerClient.GetFromJsonAsync<List<InboxItem>>("/api/inbox");
         Assert.NotNull(emptyInbox);

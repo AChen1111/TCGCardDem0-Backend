@@ -39,7 +39,7 @@ public sealed class GachaService(PublishedConfigReader configReader, IGachaRando
         {
             pool = data.PoolEntries
                 .Where(value => string.Equals(value.PoolKey, poolKey, StringComparison.Ordinal))
-                .Select(value => new WeightedCard(value.CardId, value.Weight, poolKey))
+                .Select(value => new WeightedCard(value.CardId, value.Weight, data.SourcePoolForArt(value.CardId)))
                 .ToArray();
             if (pool.Count == 0)
             {
@@ -54,8 +54,16 @@ public sealed class GachaService(PublishedConfigReader configReader, IGachaRando
         for (var i = 0; i < count; i++)
         {
             var card = Pick(pool, value => value.Weight);
-            var rarity = Pick(data.RarityWeights, value => value.Weight);
-            results.Add(new GachaDrawResult(card.CardId, rarity.Rarity, card.SourcePool));
+            bool special = data.SpecialMaterials.Any(value => value.CardId == card.CardId);
+            var eligible = special
+                ? data.RarityWeights.Where(value => value.Rarity == 0 || value.Rarity == 1 && data.SpecialMaterials.Any(x => x.CardId == card.CardId && x.AllowColorful)
+                    || value.Rarity == 3 && data.SpecialMaterials.Any(x => x.CardId == card.CardId && x.AllowGoldOutline)).ToArray()
+                : data.RarityWeights.Where(value => value.Rarity == 0).ToArray();
+            var rarity = Pick(eligible, value => value.Weight);
+            var arts = data.ArtVariants.Where(value => value.CardId == card.CardId).ToArray();
+            int artIndex = random.Next(arts.Length + 1);
+            string artId = artIndex == 0 ? card.CardId : arts[artIndex - 1].ArtId;
+            results.Add(new GachaDrawResult(card.CardId, rarity.Rarity, data.SourcePoolForArt(artId), artId));
         }
 
         return results;

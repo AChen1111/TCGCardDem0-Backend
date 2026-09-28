@@ -17,6 +17,7 @@ public sealed class PlayerProfile
     public int? BackgroundId { get; set; }
     public List<int> OwnedBackgroundIds { get; set; } = [];
     public List<OwnedCard> OwnedCards { get; set; } = [];
+    public List<string> OwnedArtIds { get; set; } = [];
     public long Gold { get; set; }
     public long Ur { get; set; }
     public long Revision { get; set; }

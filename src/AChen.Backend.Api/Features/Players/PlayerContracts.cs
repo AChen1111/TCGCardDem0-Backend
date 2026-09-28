@@ -25,7 +25,7 @@ public sealed record DrawCardsRequest(
     int Count,
     long ExpectedRevision);
 
-public sealed record CardDrawResultResponse(string CardId, int Rarity, string SourcePool, bool IsOverflow, long UrGained);
+public sealed record CardDrawResultResponse(string CardId, int Rarity, string SourcePool, bool IsOverflow, long UrGained, string? ArtId = null);
 
 public sealed record DrawCardsResponse(
     IReadOnlyList<CardDrawResultResponse> Results,
@@ -45,7 +45,8 @@ public sealed record PlayerResponse(
     DateTimeOffset UpdatedAt,
     int AvatarFrameId,
     IReadOnlyList<int> OwnedAvatarFrameIds,
-    long Ur);
+    long Ur,
+    IReadOnlyList<string>? OwnedArtIds = null);
 
 public sealed record CraftCardRequest(string CardId, long ExpectedRevision, long ExpectedUrAmount);
 public sealed record DismantleCardRequest(string CardId, int Rarity, int Count, long ExpectedRevision, long ExpectedUrAmount);

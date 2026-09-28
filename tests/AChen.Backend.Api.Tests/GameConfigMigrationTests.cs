@@ -1,4 +1,8 @@
 using AChen.Backend.Api.Data;
+using AChen.Backend.Api.Features.Auth;
+using AChen.Backend.Api.Features.Decks;
+using AChen.Backend.Api.Features.Players;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -7,6 +11,32 @@ namespace AChen.Backend.Api.Tests;
 
 public sealed class GameConfigMigrationTests
 {
+    [Fact]
+    public async Task Alternate_art_migration_merges_rule_cards_and_preserves_unlocked_art()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+        await db.GetService<IMigrator>().MigrateAsync("20260927122935_PlayerAvatarFrames");
+        var now = DateTimeOffset.UtcNow;
+        var user = new User { Username = "art", NormalizedUsername = "ART", PasswordHash = "hash", CreatedAt = now, UpdatedAt = now };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO PlayerProfiles (UserId,Nickname,AvatarId,OwnedAvatarIds,AvatarFrameId,OwnedAvatarFrameIds,BackgroundId,OwnedBackgroundIds,OwnedCards,Gold,Revision,CreatedAt,UpdatedAt) VALUES ({user.Id},'art',1010001,'[1010001]',1030001,'[1030001]',1,'[1]','[{{\"CardId\":\"14558127\",\"Rarity\":0,\"Count\":2}},{{\"CardId\":\"14558128\",\"Rarity\":0,\"Count\":3}}]',0,7,0,0)");
+        db.PlayerDecks.Add(new PlayerDeck { UserId = user.Id, Name = "异画卡组",
+            MainDeckJson = "[{\"CardId\":\"14558127\",\"Rarity\":0,\"Count\":1},{\"CardId\":\"14558128\",\"Rarity\":0,\"Count\":2}]",
+            ExtraDeckJson = "[]", Revision = 3, CreatedAt = now, UpdatedAt = now });
+        await db.SaveChangesAsync();
+        await db.Database.MigrateAsync();
+        db.ChangeTracker.Clear();
+        var profile = await db.PlayerProfiles.SingleAsync();
+        Assert.Equal(new OwnedCard("14558127", 0, 5), Assert.Single(profile.OwnedCards));
+        Assert.Equal(new[] { "14558127", "14558128" }, profile.OwnedArtIds.OrderBy(x => x));
+        Assert.Equal(7, profile.Revision);
+        var deck = await db.PlayerDecks.SingleAsync();
+        Assert.Equal(new DeckCardEntry("14558127", 0, 3), Assert.Single(System.Text.Json.JsonSerializer.Deserialize<DeckCardEntry[]>(deck.MainDeckJson)!));
+        Assert.Equal(3, deck.Revision);
+    }
     [Fact]
     public async Task Migration_preserves_positive_numeric_avatar_ids_and_clears_legacy_keys()
     {

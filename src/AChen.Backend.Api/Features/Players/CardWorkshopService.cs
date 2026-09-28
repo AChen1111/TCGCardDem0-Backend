@@ -17,10 +17,14 @@ public sealed class CardWorkshopService(AppDbContext db, PublishedConfigReader c
         RequireQuote(request.ExpectedUrAmount, rules.CraftCostUr);
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var player = await PlayerAsync(userId, request.ExpectedRevision, ct);
-        if (player.OwnedCards.Any(x => x.CardId == request.CardId && x.Rarity == 0 && x.Count > 0))
-            throw Error("NORMAL_CARD_ALREADY_OWNED", "已拥有该卡普通版");
         if (player.Ur < rules.CraftCostUr) throw Error("INSUFFICIENT_UR", "UR 不足");
-        player.OwnedCards = player.OwnedCards.Append(new OwnedCard(request.CardId, 0, 1)).OrderBy(x => x.CardId).ThenBy(x => x.Rarity).ToList();
+        var normal = player.OwnedCards.SingleOrDefault(x => x.CardId == request.CardId && x.Rarity == 0);
+        if (normal != null && normal.Count == int.MaxValue) throw Error("CARD_COUNT_OVERFLOW", "卡牌持有数量超出上限");
+        player.OwnedCards = player.OwnedCards.Where(x => x != normal)
+            .Append(new OwnedCard(request.CardId, 0, (normal?.Count ?? 0) + 1))
+            .OrderBy(x => x.CardId).ThenBy(x => x.Rarity).ToList();
+        player.OwnedArtIds = player.OwnedArtIds.Append(request.CardId)
+            .Distinct(StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal).ToList();
         player.Ur -= rules.CraftCostUr;
         await SaveAsync(player, ct);
         await transaction.CommitAsync(ct);

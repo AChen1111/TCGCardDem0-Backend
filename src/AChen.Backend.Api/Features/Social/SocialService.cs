@@ -277,8 +277,10 @@ public sealed class SocialService(
             throw new ApiException(StatusCodes.Status400BadRequest, "GOLD_OVERFLOW", "金币数量超出上限");
         }
 
-        var settlement = CardInventorySettlement.Grant(profile.OwnedCards, gift.Cards,
-            CardEconomyConfiguration.From(await configReader.GetAsync(cancellationToken)));
+        var configuration = await configReader.GetAsync(cancellationToken);
+        var settlement = CardInventorySettlement.Grant(profile.OwnedCards,
+            gift.Cards.Select(card => card with { CardId = configuration.ResolveCardId(card.CardId) }),
+            CardEconomyConfiguration.From(configuration));
         long ur = CardInventorySettlement.AddUr(profile.Ur, settlement.UrGained);
         var now = timeProvider.GetUtcNow();
         if (gift.Gold > 0)
@@ -287,6 +289,8 @@ public sealed class SocialService(
         }
 
         profile.OwnedCards = settlement.Cards;
+        profile.OwnedArtIds = profile.OwnedArtIds.Concat(gift.Cards.Select(card => card.CardId))
+            .Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
         profile.Ur = ur;
 
         profile.Revision++;

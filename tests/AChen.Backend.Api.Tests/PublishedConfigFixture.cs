@@ -41,6 +41,8 @@ internal sealed class PublishedConfigFixture(ApiFactory factory)
         ["card-packs"] = GameConfigTables.FromRows(Data.Catalog.CardPacks).Encode(),
         ["pool-entries"] = GameConfigTables.FromRows(Data.PoolEntries).Encode(),
         ["rarity-weights"] = GameConfigTables.FromRows(Data.RarityWeights).Encode(),
+        ["card-art-variants"] = GameConfigTables.FromRows(Data.ArtVariants).Encode(),
+        ["card-special-materials"] = GameConfigTables.FromRows(Data.SpecialMaterials).Encode(),
         ["all-cards"] = GameConfigTables.FromRows(Data.AllCards).Encode(),
         ["wallpaper-offsets"] = GameConfigTables.FromRows(Data.WallpaperOffsets).Encode(),
         ["Cards"] = Data.CardTable, ["Translations"] = Data.TranslationTable

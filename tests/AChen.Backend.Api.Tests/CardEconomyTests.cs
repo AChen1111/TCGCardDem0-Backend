@@ -63,7 +63,7 @@ public sealed class CardEconomyTests(ApiFactory factory) : IClassFixture<ApiFact
             Assert.Contains(new OwnedCard(Target, 0, 1), result.Player.OwnedCards);
             Assert.Contains(new OwnedCard(Target, 4, 1), result.Player.OwnedCards);
             var duplicate = await client.PostAsJsonAsync("/api/player/cards/craft", new CraftCardRequest(Target, result.Player.Revision, 30));
-            await Error(duplicate, "NORMAL_CARD_ALREADY_OWNED");
+            await Error(duplicate, "INSUFFICIENT_UR");
             var decomposed = await client.PostAsJsonAsync("/api/player/cards/dismantle", new DismantleCardRequest(Target, 0, 1, result.Player.Revision, 10));
             decomposed.EnsureSuccessStatusCode();
             var after = (await decomposed.Content.ReadFromJsonAsync<CardWorkshopResponse>())!.Player;
@@ -80,6 +80,29 @@ public sealed class CardEconomyTests(ApiFactory factory) : IClassFixture<ApiFact
             var refresh = await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = login.GetProperty("refreshToken").GetString() });
             refresh.EnsureSuccessStatusCode();
             Assert.Equal(after.Ur, (await refresh.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("player").GetProperty("ur").GetInt64());
+        }
+    }
+
+    [Fact]
+    public async Task Repeated_crafting_can_exceed_three_normal_copies_regardless_of_deck_limit()
+    {
+        var (client, username) = await Login();
+        using (client)
+        {
+            var gift = await Gift(client, username, [new(Card, 0, 39)]);
+            var player = gift.Player;
+            foreach (string cardId in new[] { "23434538", "14558127", "21143940" })
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    using var response = await client.PostAsJsonAsync("/api/player/cards/craft", new CraftCardRequest(cardId, player.Revision, 30));
+                    response.EnsureSuccessStatusCode();
+                    player = (await response.Content.ReadFromJsonAsync<CardWorkshopResponse>())!.Player;
+                }
+                Assert.Equal(4, player.OwnedCards.Single(x => x.CardId == cardId && x.Rarity == 0).Count);
+                Assert.Contains(cardId, player.OwnedArtIds);
+            }
+            Assert.Equal(0, player.Ur);
         }
     }
 
@@ -180,10 +203,9 @@ public sealed class CardEconomyTests(ApiFactory factory) : IClassFixture<ApiFact
     [Fact]
     public async Task Draw_endpoint_returns_overflow_in_order_and_updates_gold_ur_revision_atomically()
     {
-        var pack=config.Data.Catalog.CardPacks.First(x=>x.PoolKey!="CardAll"&&x.IsEnabled);
-        var selected=config.Data.PoolEntries.First(x=>x.PoolKey==pack.PoolKey);
+        var pack=config.Data.Catalog.CardPacks.Single(x=>x.CoverResourceKey=="c_01");
+        var selected=config.Data.PoolEntries.Single(x=>x.PoolKey==pack.PoolKey&&x.CardId=="02129638");
         config.Data.PoolEntries=config.Data.PoolEntries.Where(x=>x.PoolKey!=pack.PoolKey||x.CardId==selected.CardId).ToArray();
-        config.Data.RarityWeights=config.Data.RarityWeights.Where(x=>x.Rarity==0).ToArray();
         var (client,name)=await Login();using(client)
         {
             var gift=await Gift(client,name,[new(selected.CardId,0,2)]);
@@ -193,6 +215,7 @@ public sealed class CardEconomyTests(ApiFactory factory) : IClassFixture<ApiFact
             response.EnsureSuccessStatusCode();var draw=(await response.Content.ReadFromJsonAsync<DrawCardsResponse>())!;
             Assert.Equal(new[]{false,true,true,true,true},draw.Results.Select(x=>x.IsOverflow));
             Assert.Equal(new long[]{0,10,10,10,10},draw.Results.Select(x=>x.UrGained));
+            Assert.All(draw.Results, result => { Assert.Equal(0, result.Rarity); Assert.Equal(selected.CardId, result.ArtId); Assert.Equal(config.Data.SourcePoolForArt(selected.CardId), result.SourcePool); });
             Assert.Equal(40,draw.Player.Ur);Assert.Equal(123,draw.Player.Gold);Assert.Equal(gift.Player.Revision+1,draw.Player.Revision);
             Assert.Equal(3,Assert.Single(draw.Player.OwnedCards).Count);
         }

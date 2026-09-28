@@ -97,6 +97,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                         value => value.Aggregate(0, (hash, card) => HashCode.Combine(hash, card.CardId, card.Rarity, card.Count)),
                         value => value.ToList()))
                 .HasColumnType("TEXT");
+            profile.Property(value => value.OwnedArtIds)
+                .HasConversion(
+                    value => JsonSerializer.Serialize(value, JsonSerializerOptions.Default),
+                    value => JsonSerializer.Deserialize<List<string>>(value, JsonSerializerOptions.Default) ?? new List<string>(),
+                    new ValueComparer<List<string>>(
+                        (left, right) => left != null && right != null && left.SequenceEqual(right),
+                        value => value.Aggregate(0, (hash, art) => HashCode.Combine(hash, art)),
+                        value => value.ToList()))
+                .HasColumnType("TEXT");
             profile.Property(value => value.Ur).HasDefaultValue(0L);
             profile.Property(value => value.Revision).IsConcurrencyToken();
             profile.Property(value => value.CreatedAt).HasConversion<DateTimeOffsetToBinaryConverter>();
