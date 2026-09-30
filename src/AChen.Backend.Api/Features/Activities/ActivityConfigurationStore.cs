@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace AChen.Backend.Api.Features.Activities;
 
-public sealed class ActivityConfigurationStore(AppDbContext db, LatestContentService content, ActivityGate gate,
+public sealed class ActivityConfigurationStore(AppDbContext db, ActivityGate gate,
     IOptions<ContentDeliveryOptions> options, IHostEnvironment environment, TimeProvider clock)
 {
     static readonly JsonSerializerOptions Json = LatestContentService.Json;
@@ -118,15 +118,6 @@ public sealed class ActivityConfigurationStore(AppDbContext db, LatestContentSer
         try
         {
             definitions = ActivityCsvConfiguration.Package(files); masters = ActivityCsvConfiguration.Master(files["activities"]);
-            var reference = await content.ConfigAsync(manifest.ReferenceTarget, manifest.ReferenceConfigHash, ct);
-            foreach (var d in definitions.Values) ActivityCsvConfiguration.Resources(d, reference);
-            // 同一活动版本用于全部平台；每个平台必须先发布它引用的普通内容。
-            foreach (var current in await db.Set<CurrentContent>().AsNoTracking().ToListAsync(ct))
-            {
-                var game = await content.LatestAsync(current.Target, ct);
-                var config = await content.ConfigAsync(current.Target, game.configHash, ct);
-                foreach (var d in definitions.Values) ActivityCsvConfiguration.Resources(d, config);
-            }
         }
         catch (FormatException e) { throw Invalid(e.Message); }
         await gate.Mutex.WaitAsync(ct);

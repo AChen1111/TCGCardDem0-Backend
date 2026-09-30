@@ -1,6 +1,6 @@
 # 活动 CSV 发布与客户端协议 2
 
-活动为独立全平台版本，不修改普通内容发布或主包启动协议。客户端请求需 Bearer 登录令牌以及 X-Activity-Schema: 2。列表、访问和结算仍通过 X-Content-Target/X-Config-Hash 核对普通内容。
+活动为独立全平台配置，不修改普通内容发布或主包启动协议。客户端请求需 Bearer 登录令牌以及 X-Activity-Schema: 2。活动发布、列表、签到访问、弹窗回执和纯金币领取不读取普通内容或检查资源引用；实际发放卡牌时仍通过 X-Content-Target/X-Config-Hash 读取既有卡牌结算配置。
 
 | 方法 | 路径 | 行为 |
 | --- | --- | --- |
@@ -14,13 +14,13 @@
 | POST | /api/activities/{id}/exchange | 金币兑换 |
 | POST | /api/activities/{id}/popup-shown | 策略版本与周期的弹窗回执 |
 
-上传内容类型 application/zip，上限 32 MiB；平铺 manifest.json + activities.bytes + 全部引用子表.bytes。清单示意如下（SHA、大小、普通内容哈希替换为真实值）：
+上传内容类型 application/zip，上限 32 MiB；平铺 manifest.json + activities.bytes + 全部引用子表.bytes。清单示意如下（SHA、大小、源哈希替换为真实值）：
 
 ```json
-{"schemaVersion":2,"releaseId":"f39d0b3e-3b83-4bc6-b7a8-309728132ab7","expectedRevision":0,"referenceTarget":"Editor","referenceConfigHash":"实际普通配置哈希","sourceHash":"实际源哈希","files":[{"table":"activities","size":123,"sha256":"实际SHA256"}]}
+{"schemaVersion":2,"releaseId":"f39d0b3e-3b83-4bc6-b7a8-309728132ab7","expectedRevision":0,"sourceHash":"实际源哈希","files":[{"table":"activities","size":123,"sha256":"实际SHA256"}]}
 ```
 
-ExpectedRevision 必须匹配当前全平台发布 Revision，首次为 0。ReferenceTarget/ReferenceConfigHash 用于读取已发布普通内容检查文案/卡牌/卡包/图片白名单；发布也检查其他已有平台的普通内容。ReleaseId 不可复用。发布失败不切换指针；下载仅允许发布记录清单包含的表，返回 ETag SHA-256。
+ExpectedRevision 仅匹配当前活动发布 Revision，首次为 0，用于避免同时发布相互覆盖。活动清单不含普通版本平台或配置哈希；后端不查询普通内容，不检查文案/图片/卡牌/卡包是否已发布。没有普通版本或已有平台缺少普通配置表时，仍可发布活动。ReleaseId 不可复用。发布失败不切换指针；下载仅允许发布记录清单包含的表，返回 ETag SHA-256。
 
 ```json
 {"schemaVersion":2,"releaseId":"当前UUID","definitionsRevision":1,"playerStateRevision":0,"serverTime":"2026-10-01T04:00:00Z","serverDay":"2026-10-01","nextResetAt":"2026-10-02T00:00:00+08:00","activities":[{"master":{"activityId":"daily_gold","type":1,"detailTable":"daily_gold","isEnabled":true,"scheduleMode":0},"definitionVersion":1,"status":"running","eligible":true,"shouldShow":false,"playerState":{"progress":0,"completed":false,"entryStates":[]}}],"files":[{"table":"daily_gold","size":123,"sha256":"实际SHA256","url":"/api/activities/files/当前UUID/daily_gold.bytes"}]}
@@ -32,6 +32,6 @@ ExpectedRevision 必须匹配当前全平台发布 Revision，首次为 0。Refe
 
 同 ActivityId 首次发布即固定玩法/档位/周期/次数等业务身份；奖励、成本及排期可变，次数和进度保留。每活动的总表或子表改变才递增 DefinitionVersion。领取请求仍包含 EntryId、DefinitionVersion、ExpectedRevision、PeriodKey、RequestId；幂等结果优先于版本、排期和次数校验。返回 Player、Activities（协议 2 总表索引）、金币/UR 与卡牌结算结果。
 
-错误包含 INVALID_ACTIVITY_PACKAGE（422，具体表名/字段）、ACTIVITY_VERSION_CHANGED（409，并发或领取定义版本变化）、ACTIVITY_SCHEMA_CHANGED（409，旧客户端）、ACTIVITY_CONTENT_NOT_READY（409，当前开启活动普通资源未就绪）及原结算错误。旧草稿、礼包定义编辑、单活动发布/复制/下架接口已移除。停止活动通过 CSV 禁用/结束时间后发布完整包；历史行人工保留。
+错误包含 INVALID_ACTIVITY_PACKAGE（422，活动表结构或文件错误，具体表名/字段）、ACTIVITY_VERSION_CHANGED（409，并发或领取定义版本变化）、ACTIVITY_SCHEMA_CHANGED（409，旧客户端）及原结算错误。旧草稿、礼包定义编辑、单活动发布/复制/下架接口已移除。停止活动通过 CSV 禁用/结束时间后发布完整包；历史行人工保留。
 
 ActivityCsvRelease 迁移移除旧配置正文列，不转换旧 JSON。玩家记录不删除。后台只读总表和发布历史；CSV 是唯一编辑来源。

@@ -43,7 +43,6 @@ public sealed class ActivityService(AppDbContext db, PublishedConfigReader reade
 
     public async Task<ActivityIndexResponse> ListAsync(Guid id, bool visit, CancellationToken ct)
     {
-        await reader.GetAsync(ct);
         if (visit) return await Write(async () =>
         {
             var profile = await Player(id, ct);
@@ -75,17 +74,7 @@ public sealed class ActivityService(AppDbContext db, PublishedConfigReader reade
         return row;
     }
 
-    async Task<List<ActivityDefinition>> Definitions(CancellationToken ct)
-    {
-        var definitions = await configuration.Definitions(ct);
-        var config = await reader.GetAsync(ct);
-        foreach (var d in definitions.Where(x => x.ScheduleMode == ActivityScheduleMode.Permanent || clock.GetUtcNow() >= x.StartsAt && clock.GetUtcNow() < x.EndsAt))
-        {
-            try { ActivityCsvConfiguration.Resources(d, config); }
-            catch (FormatException e) { throw Error("ACTIVITY_CONTENT_NOT_READY", e.Message); }
-        }
-        return definitions;
-    }
+    Task<List<ActivityDefinition>> Definitions(CancellationToken ct) => configuration.Definitions(ct);
 
     async Task<ActivityListResponse> Build(PlayerProfile player, DateTimeOffset now, CancellationToken ct)
     {
@@ -162,7 +151,6 @@ public sealed class ActivityService(AppDbContext db, PublishedConfigReader reade
             if (previous.PayloadHash != hash) throw Error("REQUEST_ID_CONFLICT", "请求标识对应不同的操作");
             return Parse<ActivityClaimResponse>(previous.ResponseJson);
         }
-        var config = await reader.GetAsync(ct);
         var profile = await Player(playerId, ct);
         var now = clock.GetUtcNow();
         var definitions = await Definitions(ct);
@@ -187,9 +175,14 @@ public sealed class ActivityService(AppDbContext db, PublishedConfigReader reade
         var total = period == "all" ? counter : await Counter(playerId, id, entry.Id, "all", ct);
         if (counter.Count >= entry.LimitPerPeriod || entry.TotalLimit.HasValue && total.Count >= entry.TotalLimit) throw Error("LIMIT_REACHED", "已达到领取上限");
         if (profile.Gold < entry.CostGold) throw Error("INSUFFICIENT_GOLD", "金币不足", 422);
-        var grants = entry.Rewards.Where(x => x.RewardType == ActivityRewardType.Card)
-            .Select(x => new OwnedCard(config.ResolveCardId(x.RewardId), x.CardVariant, checked((int)x.Amount))).ToArray();
-        var settlement = CardInventorySettlement.Grant(profile.OwnedCards, grants, CardEconomyConfiguration.From(config));
+        var cardRewards = entry.Rewards.Where(x => x.RewardType == ActivityRewardType.Card).ToArray();
+        var settlement = new InventorySettlement(profile.OwnedCards.ToList(), [], 0);
+        if (cardRewards.Length > 0)
+        {
+            var config = await reader.GetAsync(ct);
+            var grants = cardRewards.Select(x => new OwnedCard(config.ResolveCardId(x.RewardId), x.CardVariant, checked((int)x.Amount))).ToArray();
+            settlement = CardInventorySettlement.Grant(profile.OwnedCards, grants, CardEconomyConfiguration.From(config));
+        }
         long gold = entry.Rewards.Where(x => x.RewardType == ActivityRewardType.Gold).Sum(x => x.Amount);
         try { profile.Gold = checked(profile.Gold - entry.CostGold + gold); }
         catch (OverflowException) { throw Error("GOLD_OVERFLOW", "金币超出上限", 422); }
@@ -223,7 +216,6 @@ public sealed class ActivityService(AppDbContext db, PublishedConfigReader reade
 
     public Task<ActivityIndexResponse> PopupAsync(Guid player, string id, ActivityPopupShownRequest request, CancellationToken ct) => Write(async () =>
     {
-        await reader.GetAsync(ct);
         var profile = await Player(player, ct);
         var now = clock.GetUtcNow();
         var definition = (await Definitions(ct)).SingleOrDefault(x => x.Id == id) ?? throw Error("ACTIVITY_DISABLED", "活动已下架");

@@ -15,6 +15,53 @@ namespace AChen.Backend.Api.Tests;
 public sealed class ActivityEndpointsTests
 {
     static readonly JsonSerializerOptions Json = LatestContentService.Json;
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Publishing_loading_visiting_and_gold_claims_are_independent_of_ordinary_content(bool legacyPlatform)
+    {
+        using var s = await Scenario.Create(publishOrdinary: false);
+        string legacyManifest = "";
+        if (legacyPlatform)
+        {
+            // 模拟旧平台记录：缺少头像框及其他普通配置，活动流程不得读取它。
+            legacyManifest = JsonSerializer.Serialize(new DevelopmentManifest { platform = "StandaloneWindows64", configs = [] }, Json);
+            await using var scope = s.Factory.Services.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Add(new CurrentContent { Target = "StandaloneWindows64", ContentId = Guid.NewGuid().ToString("D"), ManifestJson = legacyManifest });
+            await db.SaveChangesAsync();
+            s.Client.DefaultRequestHeaders.Add("X-Content-Target", "StandaloneWindows64");
+            s.Client.DefaultRequestHeaders.Add("X-Config-Hash", "stale-ordinary-config");
+        }
+        await s.Publish();
+        var index = await s.List(); Assert.Equal(6, index.Activities.Count);
+        var response = await s.Post("visit", new {}); response.EnsureSuccessStatusCode();
+        response = await s.Post("notice_national_day_2026/popup-shown", new ActivityPopupShownRequest { PolicyVersion = 1, PeriodKey = "all" });
+        response.EnsureSuccessStatusCode();
+        var reward = await s.SendClaim("daily_gold", s.Claim("daily_gold", "daily", 0, ActivityService.Day(s.Clock.Now)));
+        Assert.Equal(200, reward.Player.Gold);
+        var file = index.Files.First(); response = await s.Client.GetAsync(file.Url); response.EnsureSuccessStatusCode();
+        await using var check = s.Factory.Services.CreateAsyncScope();
+        var database = check.ServiceProvider.GetRequiredService<AppDbContext>();
+        var ordinary = await database.Set<CurrentContent>().ToListAsync();
+        if (legacyPlatform) Assert.Equal(legacyManifest, Assert.Single(ordinary).ManifestJson);
+        else Assert.Empty(ordinary);
+        var manifest = (await database.Set<ActivityReleaseRecord>().SingleAsync()).ManifestJson;
+        Assert.DoesNotContain("referenceTarget", manifest); Assert.DoesNotContain("referenceConfigHash", manifest);
+    }
+    [Fact] public async Task Ordinary_resource_references_do_not_gate_activity_publication_or_index()
+    {
+        using var s = await Scenario.Create();
+        var rows = s.Masters();
+        rows[0].NameKey = "text_not_in_ordinary_config";
+        rows[0].BannerResourceKey = "image_not_in_ordinary_config";
+        s.SetMaster(rows);
+        var exchange = GameConfigTables.Map<ActivityExchangeRow>(BinaryTable.Decode(s.Files["daily_card_exchange"]));
+        exchange[0].RewardIds = ["card_not_in_ordinary_config"];
+        s.Files["daily_card_exchange"] = GameConfigTables.FromRows(exchange).Encode();
+        await s.Publish();
+        var index = await s.List(); Assert.Equal(rows[0].NameKey, index.Activities[0].Master.NameKey);
+    }
     [Fact] public async Task Index_contains_master_and_hashes_without_detail_body_and_all_samples_download()
     {
         using var s = await Scenario.Create(); await s.Publish();
@@ -145,18 +192,22 @@ public sealed class ActivityEndpointsTests
         public void ResetFiles() => Files = Directory.GetFiles(SourceRoot(),"*.bytes").ToDictionary(Path.GetFileNameWithoutExtension,File.ReadAllBytes)!;
         public ActivityMasterRow[] Masters() => ActivityCsvConfiguration.Master(Files["activities"]);
         public void SetMaster(ActivityMasterRow[] rows) => Files["activities"] = GameConfigTables.FromRows(rows).Encode();
-        public static async Task<Scenario> Create()
+        public static async Task<Scenario> Create(bool publishOrdinary = true)
         {
             var s=new Scenario(); s.ResetFiles(); s.Factory=new ApiFactory {Clock=s.Clock}; s.Client=s.Factory.CreateClient(); s.Admin=s.Factory.CreateClient();
             s.Admin.DefaultRequestHeaders.Add("X-Content-Publish-Key",ApiFactory.PublishKey);
-            var uploaded=await PublishedConfigFixture.Upload(s.Admin,"Editor",PublishedConfigFixture.Package("Editor",PublishedConfigFixture.SourceFiles()));
-            var manifest=await s.Read<DevelopmentManifest>(uploaded); s.Hash=manifest.configHash;
-            s.Client.DefaultRequestHeaders.Add("X-Content-Target","Editor"); s.Client.DefaultRequestHeaders.Add("X-Config-Hash",s.Hash); s.Client.DefaultRequestHeaders.Add("X-Activity-Schema","2");
+            if (publishOrdinary)
+            {
+                var uploaded=await PublishedConfigFixture.Upload(s.Admin,"Editor",PublishedConfigFixture.Package("Editor",PublishedConfigFixture.SourceFiles()));
+                var manifest=await s.Read<DevelopmentManifest>(uploaded); s.Hash=manifest.configHash;
+                s.Client.DefaultRequestHeaders.Add("X-Content-Target","Editor"); s.Client.DefaultRequestHeaders.Add("X-Config-Hash",s.Hash);
+            }
+            s.Client.DefaultRequestHeaders.Add("X-Activity-Schema","2");
             var registered=await s.Client.PostAsJsonAsync("/api/auth/register",new {username="Activity"+Guid.NewGuid().ToString("N")[..12],password="correct-horse-42"});
             registered.EnsureSuccessStatusCode(); var auth=await registered.Content.ReadFromJsonAsync<JsonElement>();
             s.Client.DefaultRequestHeaders.Authorization=new AuthenticationHeaderValue("Bearer",auth.GetProperty("accessToken").GetString()); return s;
         }
-        public ActivityPackageManifest Manifest() => new() {ReleaseId=Guid.NewGuid().ToString("D"),ExpectedRevision=Revision,ReferenceTarget="Editor",ReferenceConfigHash=Hash,
+        public ActivityPackageManifest Manifest() => new() {ReleaseId=Guid.NewGuid().ToString("D"),ExpectedRevision=Revision,
             Files=Files.Select(x=>new ActivityFileInfo {Table=x.Key,Size=x.Value.Length,Sha256=ActivityCsvConfiguration.Hash(x.Value)}).ToList()};
         public async Task<HttpResponseMessage> Upload(ActivityPackageManifest manifest)
         {
