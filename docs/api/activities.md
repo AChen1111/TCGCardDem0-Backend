@@ -36,6 +36,18 @@ ExpectedRevision 仅匹配当前活动发布 Revision，首次为 0，用于避�
 
 ActivityCsvRelease 迁移移除旧配置正文列，不转换旧 JSON。玩家记录不删除。后台只读总表和发布历史；CSV 是唯一编辑来源。
 
+## 大厅入场弹窗
+
+当前活动默认使用 `PopupFrequency=oncePerLogin`、`PopupTrigger=lobbyReady`、`StopWhenCompleted=False`。有效期内、满足开放条件且显示方式含弹窗的活动，每次大厅入场都会弹出。领取完成、暂无可领奖励及历史展示回执均不影响该模式的 `ShouldShow`；奖励次数和进度仍按原规则保存，重复弹窗不会重复发奖。
+
+```csv
+PopupTrigger,PopupFrequency,StopWhenCompleted
+string,string,bool
+lobbyReady,oncePerLogin,False
+```
+
+客户端在大厅入场动画结束后依优先级展示，每次入场同一活动只展示一次，没有三个弹窗的数量上限。`popup-shown` 仍使用当前 PolicyVersion 和 `PeriodKey=all` 记录回执，该记录不会屏蔽下一次入场。显式配置的 `oncePerActivity`、`oncePerDay` 仍遵守各自的历史回执与完成提醒策略。
+
 ## 本地活动时间
 
 Development 环境可在 `src/AChen.Backend.Api/Data/activity-clock.json` 设置活动测试时间，该文件仅保存在本机，不提交 Git。例如：

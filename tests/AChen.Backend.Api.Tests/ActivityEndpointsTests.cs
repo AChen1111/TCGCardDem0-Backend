@@ -36,7 +36,8 @@ public sealed class ActivityEndpointsTests
         await s.Publish();
         var index = await s.List(); Assert.Equal(6, index.Activities.Count);
         var response = await s.Post("visit", new {}); response.EnsureSuccessStatusCode();
-        response = await s.Post("notice_national_day_2026/popup-shown", new ActivityPopupShownRequest { PolicyVersion = 1, PeriodKey = "all" });
+        response = await s.Post("notice_national_day_2026/popup-shown", new ActivityPopupShownRequest
+            { PolicyVersion = index.Activities.Single(x => x.Master.Type == 0).Master.PopupPolicyVersion, PeriodKey = "all" });
         response.EnsureSuccessStatusCode();
         var reward = await s.SendClaim("daily_gold", s.Claim("daily_gold", "daily", 0, ActivityService.Day(s.Clock.Now)));
         Assert.Equal(200, reward.Player.Gold);
@@ -154,11 +155,76 @@ public sealed class ActivityEndpointsTests
         await s.SendClaim(sign.Master.ActivityId, s.Claim(sign.Master.ActivityId, "day_1", 0));
         Assert.Equal(300, (await s.SendClaim(sign.Master.ActivityId, s.Claim(sign.Master.ActivityId, "day_2", 1))).Player.Gold);
     }
-    [Fact] public async Task Popup_receipts_and_successful_draw_progress_keep_existing_behavior()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Login_popups_ignore_receipts_and_claims_without_resetting_reward_limits(bool stopWhenCompleted)
+    {
+        using var s = await Scenario.Create(publishOrdinary: false);
+        var rows = s.Masters();
+        var gift = rows.Single(x => x.ActivityId == "national_day_gift_2026");
+        gift.PopupFrequency = "oncePerLogin";
+        gift.PopupTrigger = "rewardClaimable";
+        gift.StopWhenCompleted = stopWhenCompleted;
+        s.SetMaster(rows); await s.Publish();
+        var receipt = new ActivityPopupShownRequest { PolicyVersion = gift.PopupPolicyVersion, PeriodKey = "all" };
+        Assert.True((await s.List()).Activities.Single(x => x.Master.ActivityId == gift.ActivityId).ShouldShow);
+        var displayed = await s.Read<ActivityIndexResponse>(await s.Post(gift.ActivityId + "/popup-shown", receipt));
+        Assert.True(displayed.Activities.Single(x => x.Master.ActivityId == gift.ActivityId).ShouldShow);
+        var claimed = await s.SendClaim(gift.ActivityId, s.Claim(gift.ActivityId, "welcome", 0));
+        var state = claimed.Activities.Activities.Single(x => x.Master.ActivityId == gift.ActivityId);
+        Assert.True(state.PlayerState.Completed);
+        Assert.False(state.PlayerState.EntryStates.Single().CanClaim);
+        Assert.Equal(1, state.PlayerState.EntryStates.Single().TotalClaimedCount);
+        Assert.True(state.ShouldShow);
+        var displayedAgain = await s.Read<ActivityIndexResponse>(await s.Post(gift.ActivityId + "/popup-shown", receipt));
+        Assert.True(displayedAgain.Activities.Single(x => x.Master.ActivityId == gift.ActivityId).ShouldShow);
+        await Error(await s.Post(gift.ActivityId + "/claim", s.Claim(gift.ActivityId, "welcome", claimed.Player.Revision)), "LIMIT_REACHED");
+        Assert.Equal(1000, (await s.Player()).Gold);
+    }
+    [Fact] public async Task Switching_completed_activity_to_login_popups_keeps_claims_and_old_idempotent_results()
+    {
+        using var s = await Scenario.Create(publishOrdinary: false);
+        var rows = s.Masters(); var gift = rows.Single(x => x.ActivityId == "national_day_gift_2026");
+        gift.PopupFrequency = "oncePerActivity"; gift.StopWhenCompleted = true;
+        s.SetMaster(rows); await s.Publish();
+        var receipt = await s.Post(gift.ActivityId + "/popup-shown", new ActivityPopupShownRequest { PolicyVersion = gift.PopupPolicyVersion, PeriodKey = "all" });
+        receipt.EnsureSuccessStatusCode();
+        var original = s.Claim(gift.ActivityId, "welcome", 0);
+        var claimed = await s.SendClaim(gift.ActivityId, original);
+        Assert.False(claimed.Activities.Activities.Single(x => x.Master.ActivityId == gift.ActivityId).ShouldShow);
+        gift.PopupFrequency = "oncePerLogin"; gift.StopWhenCompleted = false; gift.PopupPolicyVersion++;
+        s.SetMaster(rows); await s.Publish();
+        var state = (await s.List()).Activities.Single(x => x.Master.ActivityId == gift.ActivityId);
+        Assert.True(state.ShouldShow); Assert.True(state.PlayerState.Completed);
+        Assert.Equal(1, state.PlayerState.EntryStates.Single().TotalClaimedCount);
+        Assert.Equal(2, state.DefinitionVersion);
+        var repeated = await s.SendClaim(gift.ActivityId, original);
+        Assert.Equal(JsonSerializer.Serialize(claimed, Json), JsonSerializer.Serialize(repeated, Json));
+        var newClaim = s.Claim(gift.ActivityId, "welcome", claimed.Player.Revision);
+        newClaim.DefinitionVersion = state.DefinitionVersion;
+        await Error(await s.Post(gift.ActivityId + "/claim", newClaim), "LIMIT_REACHED");
+        Assert.Equal(1000, (await s.Player()).Gold);
+    }
+    [Theory]
+    [InlineData("oncePerActivity")]
+    [InlineData("oncePerDay")]
+    public async Task Explicit_activity_and_daily_popup_policies_keep_their_receipt_limits(string frequency)
+    {
+        using var s = await Scenario.Create(publishOrdinary: false);
+        var rows = s.Masters(); var notice = rows.Single(x => x.Type == 0);
+        notice.PopupFrequency = frequency; s.SetMaster(rows); await s.Publish();
+        Assert.True((await s.List()).Activities.Single(x => x.Master.Type == 0).ShouldShow);
+        var period = frequency == "oncePerDay" ? ActivityService.Day(s.Clock.Now) : "all";
+        var response = await s.Post(notice.ActivityId + "/popup-shown", new ActivityPopupShownRequest { PolicyVersion = notice.PopupPolicyVersion, PeriodKey = period });
+        response.EnsureSuccessStatusCode();
+        Assert.False((await s.List()).Activities.Single(x => x.Master.Type == 0).ShouldShow);
+        s.Clock.Now = s.Clock.Now.AddDays(1);
+        Assert.Equal(frequency == "oncePerDay", (await s.List()).Activities.Single(x => x.Master.Type == 0).ShouldShow);
+    }
+    [Fact] public async Task Successful_draws_keep_accumulating_milestone_progress()
     {
         using var s = await Scenario.Create(); await s.Publish(); await s.GrantGold(20000);
-        await s.Post("notice_national_day_2026/popup-shown", new ActivityPopupShownRequest {PolicyVersion=1,PeriodKey="all"});
-        Assert.False((await s.List()).Activities.Single(x => x.Master.Type == 0).ShouldShow);
         int pack = GameConfigTables.Map<ActivityMilestoneRow>(BinaryTable.Decode(s.Files["draw_ten_reward_2026"]))[0].PackIds[0];
         var draw = await s.Client.PostAsJsonAsync("/api/player/card-draws", new {packId=pack,poolKey=GameConfigTables.Assemble(PublishedConfigFixture.SourceFiles()).Catalog.CardPacks.Single(x=>x.Id==pack).PoolKey,count=10,expectedRevision=1});
         draw.EnsureSuccessStatusCode(); Assert.Equal(10, (await s.List()).Activities.Single(x => x.Master.Type == 4).PlayerState.Progress);
@@ -168,6 +234,7 @@ public sealed class ActivityEndpointsTests
         using var s = await Scenario.Create(); var rows = s.Masters(); rows[0].StartsAt = s.Clock.Now.AddDays(2); rows[0].EndsAt = s.Clock.Now.AddDays(3); rows[1].IsEnabled = false; s.SetMaster(rows); await s.Publish();
         var index = await s.List(); Assert.Equal("upcoming", index.Activities[0].Status); Assert.Equal("disabled", index.Activities[1].Status);
         Assert.False(index.Activities[0].Master.IsOpen(s.Clock.Now)); Assert.False(index.Activities[1].Master.IsOpen(s.Clock.Now));
+        Assert.False(index.Activities[0].ShouldShow); Assert.False(index.Activities[1].ShouldShow);
         s.Files.Clear(); s.SetMaster([]); await s.Publish(); Assert.Empty((await s.List()).Activities);
     }
     [Fact] public async Task Old_schema_and_manual_edit_routes_are_unavailable()

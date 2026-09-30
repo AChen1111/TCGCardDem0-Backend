@@ -123,9 +123,11 @@ public sealed class ActivityService(AppDbContext db, PublishedConfigReader reade
             var popupPeriod = definition.Popup.Frequency == "oncePerDay" ? Day(now) : "all";
             bool done = state.PlayerState.Completed || definition.Type != ActivityType.Notice && state.PlayerState.EntryStates.All(x => x.Status == "claimed");
             definition.Popup.ShouldShow = state.Status == "running" && state.Eligible && definition.DisplayMode != ActivityDisplayMode.Page &&
-                !(definition.Popup.StopWhenCompleted && done) &&
-                (definition.Popup.Trigger == "lobbyReady" || state.PlayerState.EntryStates.Any(x => x.CanClaim)) &&
-                !shown.Any(x => x.ActivityId == definition.Id && x.PolicyVersion == definition.Popup.PolicyVersion && x.PeriodKey == popupPeriod);
+                // 每次入场提醒不受领取结果或历史展示回执影响；本次入场的去重由客户端调度器处理。
+                (definition.Popup.Frequency == "oncePerLogin" ||
+                    !(definition.Popup.StopWhenCompleted && done) &&
+                    (definition.Popup.Trigger == "lobbyReady" || state.PlayerState.EntryStates.Any(x => x.CanClaim)) &&
+                    !shown.Any(x => x.ActivityId == definition.Id && x.PolicyVersion == definition.Popup.PolicyVersion && x.PeriodKey == popupPeriod));
             result.Activities.Add(state);
         }
         return result;
