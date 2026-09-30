@@ -20,6 +20,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+if (builder.Environment.IsDevelopment())
+    builder.Configuration.AddJsonFile("Data/activity-clock.json", optional: true, reloadOnChange: false);
 var maxArchiveBytes = builder.Configuration.GetValue<long?>("ContentDelivery:MaxArchiveBytes")
     ?? 2L * 1024 * 1024 * 1024;
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = maxArchiveBytes);
@@ -73,6 +75,7 @@ builder.Services.AddOptions<ContentDeliveryOptions>()
     .Validate(options => options.MaxFileCount is >= 1 and <= 100_000, "ContentDelivery:MaxFileCount must be between 1 and 100000.")
     .ValidateOnStart();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<ActivityTimeProvider>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();

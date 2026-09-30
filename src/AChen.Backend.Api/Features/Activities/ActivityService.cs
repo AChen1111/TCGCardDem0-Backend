@@ -13,7 +13,7 @@ namespace AChen.Backend.Api.Features.Activities;
 
 public sealed record ActivityClaimResponse(PlayerResponse Player, ActivityIndexResponse Activities, long GoldGained, long UrGained, IReadOnlyList<CardGrantResult> Cards);
 public sealed class ActivityService(AppDbContext db, PublishedConfigReader reader,
-    IPlayerRepository players, TimeProvider clock, ActivityGate gate, ActivityConfigurationStore configuration)
+    IPlayerRepository players, ActivityTimeProvider clock, TimeProvider systemClock, ActivityGate gate, ActivityConfigurationStore configuration)
 {
     internal static readonly JsonSerializerOptions Json = LatestContentService.Json;
     static T Parse<T>(string json) => JsonSerializer.Deserialize<T>(json, Json)!;
@@ -21,7 +21,7 @@ public sealed class ActivityService(AppDbContext db, PublishedConfigReader reade
     static ApiException Error(string code, string text, int status = 409) => new(status, code, text);
     public static string Day(DateTimeOffset now) => now.ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     static string Period(ActivityPeriodKind kind, DateTimeOffset now) => kind == ActivityPeriodKind.Daily ? Day(now) : "all";
-    async Task<PlayerProfile> Player(Guid id, CancellationToken ct) => await players.GetOrCreateAsync(id, clock.GetUtcNow(), ct)
+    async Task<PlayerProfile> Player(Guid id, CancellationToken ct) => await players.GetOrCreateAsync(id, systemClock.GetUtcNow(), ct)
         ?? throw Error("INVALID_ACCESS_TOKEN", "登录状态已失效", 401);
 
     async Task<T> Write<T>(Func<Task<T>> action, CancellationToken ct)

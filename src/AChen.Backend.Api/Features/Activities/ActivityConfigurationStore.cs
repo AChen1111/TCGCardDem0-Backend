@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 namespace AChen.Backend.Api.Features.Activities;
 
 public sealed class ActivityConfigurationStore(AppDbContext db, ActivityGate gate,
-    IOptions<ContentDeliveryOptions> options, IHostEnvironment environment, TimeProvider clock)
+    IOptions<ContentDeliveryOptions> options, IHostEnvironment environment, TimeProvider clock, ActivityTimeProvider activityClock)
 {
     static readonly JsonSerializerOptions Json = LatestContentService.Json;
     readonly string root = Path.GetFullPath(Path.Combine(Path.IsPathRooted(options.Value.StorageRoot)
@@ -64,6 +64,7 @@ public sealed class ActivityConfigurationStore(AppDbContext db, ActivityGate gat
     }
     public async Task<object> Admin(CancellationToken ct) => new
     {
+        serverTime = activityClock.GetUtcNow(),
         current = await Current(ct),
         activities = await db.Set<ActivityDefinitionRecord>().AsNoTracking().OrderBy(x => x.Id).ToListAsync(ct)
     };

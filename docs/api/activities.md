@@ -35,3 +35,13 @@ ExpectedRevision 仅匹配当前活动发布 Revision，首次为 0，用于避�
 错误包含 INVALID_ACTIVITY_PACKAGE（422，活动表结构或文件错误，具体表名/字段）、ACTIVITY_VERSION_CHANGED（409，并发或领取定义版本变化）、ACTIVITY_SCHEMA_CHANGED（409，旧客户端）及原结算错误。旧草稿、礼包定义编辑、单活动发布/复制/下架接口已移除。停止活动通过 CSV 禁用/结束时间后发布完整包；历史行人工保留。
 
 ActivityCsvRelease 迁移移除旧配置正文列，不转换旧 JSON。玩家记录不删除。后台只读总表和发布历史；CSV 是唯一编辑来源。
+
+## 本地活动时间
+
+Development 环境可在 `src/AChen.Backend.Api/Data/activity-clock.json` 设置活动测试时间，该文件仅保存在本机，不提交 Git。例如：
+
+```json
+{"Activities":{"DevelopmentTime":"2026-10-01T12:00:00+08:00"}}
+```
+
+重启后端后，活动时钟从指定时间继续走动。活动开启、签到日、每日领取和里程碑使用该时钟；登录令牌、账号创建时间和发布历史仍使用真实时间。`GET /api/admin/activities` 的 `serverTime` 返回当前活动时间。删除这个本地文件并重启即可恢复真实时间；其他环境始终使用真实时间。

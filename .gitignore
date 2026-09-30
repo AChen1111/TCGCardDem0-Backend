@@ -5,6 +5,7 @@
 *.suo
 *.userprefs
 src/AChen.Backend.Api/Data/*.db*
+src/AChen.Backend.Api/Data/activity-clock.json
 src/AChen.Backend.Api/Data/content/
 src/AChen.Backend.Api/Data/game-config-git/
 .env
