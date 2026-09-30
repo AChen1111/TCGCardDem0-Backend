@@ -8,6 +8,7 @@ using AChen.Backend.Api.Features.Gacha;
 using AChen.Backend.Api.Features.Players;
 using AChen.Backend.Api.Features.Decks;
 using AChen.Backend.Api.Features.Social;
+using AChen.Backend.Api.Features.Activities;
 using AChen.Backend.Api.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -80,6 +81,8 @@ builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<CardWorkshopService>();
 builder.Services.AddScoped<SocialService>();
+builder.Services.AddScoped<ActivityService>();
+builder.Services.AddSingleton<ActivityGate>();
 builder.Services.AddSingleton<IGachaRandom, CryptoGachaRandom>();
 builder.Services.AddScoped<GachaService>();
 builder.Services.AddHttpContextAccessor();
@@ -209,6 +212,15 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0,
             AutoReplenishment = true
         }));
+    options.AddPolicy("activity-management", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirst(ContentPublisherAuthentication.FingerprintClaim)?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 120,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
     options.AddPolicy("content-upload", context => RateLimitPartition.GetConcurrencyLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new ConcurrencyLimiterOptions
@@ -278,6 +290,7 @@ app.MapAuthEndpoints();
 app.MapPlayerEndpoints();
 app.MapDeckEndpoints();
 app.MapSocialEndpoints();
+app.MapActivityEndpoints();
 app.MapAccountManagementEndpoints();
 app.MapContentEndpoints();
 app.MapRazorPages();

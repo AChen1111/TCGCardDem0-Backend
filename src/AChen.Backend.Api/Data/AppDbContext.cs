@@ -23,6 +23,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        Features.Activities.ActivityModel.Configure(modelBuilder);
         modelBuilder.Entity<PlayerDeck>(deck =>
         {
             deck.HasKey(x => x.Id);

@@ -11,7 +11,9 @@ public sealed class PlayerService(
     PublishedConfigReader configReader,
     GachaService gachaService,
     TimeProvider timeProvider,
-    ILogger<PlayerService> logger)
+    ILogger<PlayerService> logger,
+    AChen.Backend.Api.Features.Activities.ActivityService activities,
+    AChen.Backend.Api.Features.Activities.ActivityGate activityGate)
 {
     public async Task<PlayerResponse> GetAsync(Guid userId, CancellationToken cancellationToken)
     {
@@ -204,6 +206,13 @@ public sealed class PlayerService(
         DrawCardsRequest request,
         CancellationToken cancellationToken)
     {
+        await activityGate.Mutex.WaitAsync(cancellationToken);
+        try { return await DrawCardsCoreAsync(userId, request, cancellationToken); }
+        finally { activityGate.Mutex.Release(); }
+    }
+
+    private async Task<DrawCardsResponse> DrawCardsCoreAsync(Guid userId, DrawCardsRequest request, CancellationToken cancellationToken)
+    {
         var errors = PlayerValidation.Validate(request);
         if (errors.Count > 0)
         {
@@ -265,6 +274,7 @@ public sealed class PlayerService(
         profile.UpdatedAt = now;
         try
         {
+            await activities.RecordDrawAsync(profile, request.PackId, request.Count, cancellationToken);
             await repository.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException)

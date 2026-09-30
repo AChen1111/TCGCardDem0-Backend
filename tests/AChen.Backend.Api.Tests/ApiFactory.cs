@@ -5,6 +5,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace AChen.Backend.Api.Tests;
 
@@ -21,6 +22,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     public string ContentPath => contentPath;
 
     public IGachaRandom? GachaRandom { get; init; }
+    public TimeProvider? Clock { get; init; }
 
     public ApiFactory()
     {
@@ -46,6 +48,14 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         });
         builder.ConfigureTestServices(services =>
         {
+            if (Clock is not null)
+            {
+                foreach (var descriptor in services.Where(value => value.ServiceType == typeof(TimeProvider)).ToList()) services.Remove(descriptor);
+                services.AddSingleton(Clock);
+                // The activity clock advances several days; token expiry is covered by auth tests.
+                services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme,
+                    options => options.TokenValidationParameters.ValidateLifetime = false);
+            }
             if (GachaRandom is null)
             {
                 return;
