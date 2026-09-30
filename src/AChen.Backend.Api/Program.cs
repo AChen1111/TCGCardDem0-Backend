@@ -82,6 +82,7 @@ builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<CardWorkshopService>();
 builder.Services.AddScoped<SocialService>();
 builder.Services.AddScoped<ActivityService>();
+builder.Services.AddScoped<ActivityConfigurationStore>();
 builder.Services.AddSingleton<ActivityGate>();
 builder.Services.AddSingleton<IGachaRandom, CryptoGachaRandom>();
 builder.Services.AddScoped<GachaService>();

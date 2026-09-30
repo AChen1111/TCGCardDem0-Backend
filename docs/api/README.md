@@ -325,3 +325,7 @@
 以上 `player` 只展示相关字段，实际为完整 PlayerResponse。领取状态、金币、收藏、UR 和 Revision 同次事务更新；重复领取失败。客户端只在 `urGained>0` 时展示收益提示。
 
 配置要求：`card-crafting` 唯一行 `Rarity=0, CostUr>0`；`card-recycling` 必须覆盖 0–4，`DismantleUr` 和 `OverflowUr` 各自为正整数。首版分别是 30 与 10/15/20/25/30。缺失或损坏不能按免费执行；服务端旧包读取的必需表集合保持兼容，需要 UR 的操作才强制加载这两张经济配置。
+
+## 活动配置
+
+[活动 CSV 发布与客户端协议 2](activities.md)：独立整包发布、全平台版本、子表下载及活动结算。

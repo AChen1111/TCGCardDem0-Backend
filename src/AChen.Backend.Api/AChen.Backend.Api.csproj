@@ -21,7 +21,7 @@
     <Compile Include="../../../Assets/Scripts/Network/GameConfig/BinaryTable.cs;../../../Assets/Scripts/Network/GameConfig/GameConfigTables.cs;../../../Assets/Scripts/Network/GameConfig/PublishedGameConfig.cs;../../../Assets/Scripts/Network/GameConfig/ConfigArtifacts.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../../../Assets/Scripts/Network/GameConfig/Generated/CardRow.cs" Link="Shared/CardRow.cs" />
     <Compile Include="../../../Assets/Scripts/Network/GameConfig/CardEconomyConfiguration.cs" Link="Shared/CardEconomyConfiguration.cs" />
-    <Compile Include="../../../Assets/Scripts/Network/Activities/ActivityContracts.cs" Link="Shared/ActivityContracts.cs" />
+    <Compile Include="../../../Assets/Scripts/Network/Activities/*.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../../../Assets/Scripts/Localization/Generated/TranslationRow.cs" Link="Shared/TranslationRow.cs" />
   </ItemGroup>
 </Project>
