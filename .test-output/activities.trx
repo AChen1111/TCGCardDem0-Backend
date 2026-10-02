@@ -1,0 +1,712 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="cf21c82b-bed6-4067-b9e6-cf94ab9a8a43" name="ldc20@ASUS 2026-09-30 17:56:06" runUser="ASUS\ldc20" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-30T17:56:06.3737972+08:00" queuing="2026-09-30T17:56:06.3737975+08:00" start="2026-09-30T17:56:02.9775683+08:00" finish="2026-09-30T17:56:10.5599643+08:00" />
+  <TestSettings name="default" id="cfbaa157-a720-4a35-9ec5-39756cc2d15c">
+    <Deployment runDeploymentRoot="ldc20_ASUS_2026-09-30_17_56_06" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="4fb46940-2337-4eae-9194-ffbde9a85c3a" testId="9417f6a6-e68b-0014-f0f9-6d33ab012951" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Concurrent_devices_settle_one_claim" computerName="ASUS" duration="00:00:00.5248735" startTime="2026-09-30T17:56:07.7725042+08:00" endTime="2026-09-30T17:56:07.7725044+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4fb46940-2337-4eae-9194-ffbde9a85c3a" />
+    <UnitTestResult executionId="d6b01729-bdca-4d71-961f-3e4613dcd863" testId="472dd593-bca8-215c-80e7-ce14e035fa94" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Draft_updates_do_not_leak_and_disable_reenable_keeps_claim_history" computerName="ASUS" duration="00:00:00.5491363" startTime="2026-09-30T17:56:09.4505226+08:00" endTime="2026-09-30T17:56:09.4505230+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d6b01729-bdca-4d71-961f-3e4613dcd863" />
+    <UnitTestResult executionId="0cc6f7c9-937b-4859-a078-fd488c1b3ea2" testId="4ad939b6-d05a-8986-8eb2-a8e63f1c6578" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Daily_reset_uses_beijing_midnight_and_rejects_previous_period" computerName="ASUS" duration="00:00:02.1606926" startTime="2026-09-30T17:56:05.6804856+08:00" endTime="2026-09-30T17:56:05.6804961+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0cc6f7c9-937b-4859-a078-fd488c1b3ea2" />
+    <UnitTestResult executionId="917fefa7-874b-473d-9d5e-b1991324a703" testId="9cb5180a-0bc9-cc19-f557-db1736d23c13" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Sign_in_counts_distinct_lobby_days_and_unlocked_rewards_can_be_caught_up" computerName="ASUS" duration="00:00:00.6345333" startTime="2026-09-30T17:56:08.9011397+08:00" endTime="2026-09-30T17:56:08.9011400+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="917fefa7-874b-473d-9d5e-b1991324a703" />
+    <UnitTestResult executionId="e1b72340-b246-49a0-bee3-220f8efb90e1" testId="dc092b4b-e203-ea81-4526-c36be4746a70" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Successful_draw_updates_milestone_inside_inventory_settlement" computerName="ASUS" duration="00:00:00.5781968" startTime="2026-09-30T17:56:10.0291429+08:00" endTime="2026-09-30T17:56:10.0291434+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e1b72340-b246-49a0-bee3-220f8efb90e1" />
+    <UnitTestResult executionId="747f7770-c521-4457-9654-e320af38aace" testId="94f8088a-dfe0-064c-f629-1fca07f30a78" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Exchange_deducts_cost_grants_published_card_and_freezes_reward_identity" computerName="ASUS" duration="00:00:00.5141868" startTime="2026-09-30T17:56:07.2474594+08:00" endTime="2026-09-30T17:56:07.2474596+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="747f7770-c521-4457-9654-e320af38aace" />
+    <UnitTestResult executionId="aed31fa2-1361-41b9-8198-d56f9bfe957c" testId="b93caa3d-dcba-d32d-f889-b9f102a01d44" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Popup_receipt_suppresses_only_that_policy_and_server_day" computerName="ASUS" duration="00:00:00.6010403" startTime="2026-09-30T17:56:06.7331125+08:00" endTime="2026-09-30T17:56:06.7331131+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="aed31fa2-1361-41b9-8198-d56f9bfe957c" />
+    <UnitTestResult executionId="6f203ce5-4c0e-44a1-8d38-d51b7706139b" testId="0014f412-806a-f11c-9f3c-9776db9b3536" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Retry_after_end_returns_original_settlement_and_new_request_cannot_claim" computerName="ASUS" duration="00:00:00.4510902" startTime="2026-09-30T17:56:06.1319788+08:00" endTime="2026-09-30T17:56:06.1319792+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6f203ce5-4c0e-44a1-8d38-d51b7706139b" />
+    <UnitTestResult executionId="29ce21af-d8e3-4873-89fa-126f897ae9f8" testId="f532acc6-16b1-e28f-448d-166eef78074e" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Publish_requires_bilingual_keys_and_reward_popup_has_page_entry" computerName="ASUS" duration="00:00:00.4548366" startTime="2026-09-30T17:56:10.4841939+08:00" endTime="2026-09-30T17:56:10.4841942+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="29ce21af-d8e3-4873-89fa-126f897ae9f8" />
+    <UnitTestResult executionId="ee1d8bab-4fa3-4ca6-86ae-2e5ceda6f7f5" testId="0369df0f-7073-452c-785e-23b5d21c6742" testName="AChen.Backend.Api.Tests.ActivityEndpointsTests.Business_limit_and_request_payload_identity_are_independent_of_request_id" computerName="ASUS" duration="00:00:00.4937132" startTime="2026-09-30T17:56:08.2664461+08:00" endTime="2026-09-30T17:56:08.2664464+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ee1d8bab-4fa3-4ca6-86ae-2e5ceda6f7f5" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Publish_requires_bilingual_keys_and_reward_popup_has_page_entry" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="f532acc6-16b1-e28f-448d-166eef78074e">
+      <Execution id="29ce21af-d8e3-4873-89fa-126f897ae9f8" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Publish_requires_bilingual_keys_and_reward_popup_has_page_entry" />
+    </UnitTest>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Draft_updates_do_not_leak_and_disable_reenable_keeps_claim_history" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="472dd593-bca8-215c-80e7-ce14e035fa94">
+      <Execution id="d6b01729-bdca-4d71-961f-3e4613dcd863" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Draft_updates_do_not_leak_and_disable_reenable_keeps_claim_history" />
+    </UnitTest>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Sign_in_counts_distinct_lobby_days_and_unlocked_rewards_can_be_caught_up" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="9cb5180a-0bc9-cc19-f557-db1736d23c13">
+      <Execution id="917fefa7-874b-473d-9d5e-b1991324a703" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Sign_in_counts_distinct_lobby_days_and_unlocked_rewards_can_be_caught_up" />
+    </UnitTest>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Concurrent_devices_settle_one_claim" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="9417f6a6-e68b-0014-f0f9-6d33ab012951">
+      <Execution id="4fb46940-2337-4eae-9194-ffbde9a85c3a" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Concurrent_devices_settle_one_claim" />
+    </UnitTest>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Successful_draw_updates_milestone_inside_inventory_settlement" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="dc092b4b-e203-ea81-4526-c36be4746a70">
+      <Execution id="e1b72340-b246-49a0-bee3-220f8efb90e1" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Successful_draw_updates_milestone_inside_inventory_settlement" />
+    </UnitTest>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Business_limit_and_request_payload_identity_are_independent_of_request_id" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="0369df0f-7073-452c-785e-23b5d21c6742">
+      <Execution id="ee1d8bab-4fa3-4ca6-86ae-2e5ceda6f7f5" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Business_limit_and_request_payload_identity_are_independent_of_request_id" />
+    </UnitTest>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Exchange_deducts_cost_grants_published_card_and_freezes_reward_identity" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="94f8088a-dfe0-064c-f629-1fca07f30a78">
+      <Execution id="747f7770-c521-4457-9654-e320af38aace" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Exchange_deducts_cost_grants_published_card_and_freezes_reward_identity" />
+    </UnitTest>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Retry_after_end_returns_original_settlement_and_new_request_cannot_claim" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="0014f412-806a-f11c-9f3c-9776db9b3536">
+      <Execution id="6f203ce5-4c0e-44a1-8d38-d51b7706139b" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Retry_after_end_returns_original_settlement_and_new_request_cannot_claim" />
+    </UnitTest>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Popup_receipt_suppresses_only_that_policy_and_server_day" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="b93caa3d-dcba-d32d-f889-b9f102a01d44">
+      <Execution id="aed31fa2-1361-41b9-8198-d56f9bfe957c" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Popup_receipt_suppresses_only_that_policy_and_server_day" />
+    </UnitTest>
+    <UnitTest name="AChen.Backend.Api.Tests.ActivityEndpointsTests.Daily_reset_uses_beijing_midnight_and_rejects_previous_period" storage="d:\gameworkplace\doing\tcgcarddem0\backend\tests\achen.backend.api.tests\bin\debug\net8.0\achen.backend.api.tests.dll" id="4ad939b6-d05a-8986-8eb2-a8e63f1c6578">
+      <Execution id="0cc6f7c9-937b-4859-a078-fd488c1b3ea2" />
+      <TestMethod codeBase="D:\GameWorkplace\Doing\TCGCardDem0\Backend\tests\AChen.Backend.Api.Tests\bin\Debug\net8.0\AChen.Backend.Api.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="AChen.Backend.Api.Tests.ActivityEndpointsTests" name="Daily_reset_uses_beijing_midnight_and_rejects_previous_period" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="9417f6a6-e68b-0014-f0f9-6d33ab012951" executionId="4fb46940-2337-4eae-9194-ffbde9a85c3a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="472dd593-bca8-215c-80e7-ce14e035fa94" executionId="d6b01729-bdca-4d71-961f-3e4613dcd863" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4ad939b6-d05a-8986-8eb2-a8e63f1c6578" executionId="0cc6f7c9-937b-4859-a078-fd488c1b3ea2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9cb5180a-0bc9-cc19-f557-db1736d23c13" executionId="917fefa7-874b-473d-9d5e-b1991324a703" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dc092b4b-e203-ea81-4526-c36be4746a70" executionId="e1b72340-b246-49a0-bee3-220f8efb90e1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="94f8088a-dfe0-064c-f629-1fca07f30a78" executionId="747f7770-c521-4457-9654-e320af38aace" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b93caa3d-dcba-d32d-f889-b9f102a01d44" executionId="aed31fa2-1361-41b9-8198-d56f9bfe957c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0014f412-806a-f11c-9f3c-9776db9b3536" executionId="6f203ce5-4c0e-44a1-8d38-d51b7706139b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f532acc6-16b1-e28f-448d-166eef78074e" executionId="29ce21af-d8e3-4873-89fa-126f897ae9f8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0369df0f-7073-452c-785e-23b5d21c6742" executionId="ee1d8bab-4fa3-4ca6-86ae-2e5ceda6f7f5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="列表中未列出的结果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="所有已加载的结果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="10" executed="10" passed="10" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.5.3.1+6b60a9e56a (64-bit .NET 8.0.31)&#xD;
+[xUnit.net 00:00:00.08]   Discovering: AChen.Backend.Api.Tests&#xD;
+[xUnit.net 00:00:00.12]   Discovered:  AChen.Backend.Api.Tests&#xD;
+[xUnit.net 00:00:00.12]   Starting:    AChen.Backend.Api.Tests&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=89fc32bd-c448-4189-ad70-ade377b2c32a; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=8baef2f1-e728-4705-812f-d6477c251cae; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=40806e93-2a3b-4e44-a9b6-e8c74dcac8b0; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=00393d61-6528-446a-92c8-39beadd45419; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=25382abb-8381-4e30-9ced-1aff648e4833; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=0d4ef874-3a48-4dd7-9d88-e1a84e64ebd3; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=9a19c30b-b395-41b8-9b2a-e950a1e972e5; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=4439642d-ff1f-4fab-9a96-483c9e5e9fdf; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=60143d6c-e4a4-4ebf-8a8b-f755797b14e2; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: AChen.Backend.Api.Features.Players.PlayerService[0]&#xD;
+      Player fdd5e907-5d3a-4ea2-9c8a-59dff631a8ff drew 1 cards from pack 1 pool CardGeneric for 100 gold at revision 2; content 60143d6c-e4a4-4ebf-8a8b-f755797b14e2.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260822130556_InitialAuth'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823085934_ContentDelivery'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823094359_PlayerProfiles'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260823102414_GameConfig'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902124154_SimplifyAccountRegistration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902143000_PlayerBackgroundId'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260902150000_PlayerOwnedAvatarIds'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906120000_GameCatalogV2'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260906150000_CatalogItemAvailability'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913180000_PlayerOwnedCardsAndGacha'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913190000_AllCards'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913200000_CardPackPoolKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260913210000_GachaRarityAllowGold'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260915090000_PublishedConfiguration'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920150000_SocialFriendsAndGifts'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260920154500_GiftTitleKey'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926000000_LatestDevelopmentContent'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260926183745_PlayerDecks'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927122935_PlayerAvatarFrames'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260927130135_PlayerUr'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260928160000_CardArtIdentity'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260929100000_RemoveThunderGiant'.&#xD;
+info: Microsoft.EntityFrameworkCore.Migrations[20402]&#xD;
+      Applying migration '20260930092405_AddActivitySystem'.&#xD;
+info: AChen.Backend.Api.Features.ContentDelivery.LatestContentService[0]&#xD;
+      �����滻���. Target=Editor; Content=3d452571-73be-424a-b2a7-bd987ccae614; Result=Success&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+warn: Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware[9]&#xD;
+      A request body size limit could not be applied. This server does not support the IHttpMaxRequestBodySizeFeature.&#xD;
+[xUnit.net 00:00:07.13]   Finished:    AChen.Backend.Api.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>
