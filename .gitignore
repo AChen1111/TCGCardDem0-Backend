@@ -11,3 +11,55 @@ src/AChen.Backend.Api/Data/game-config-git/
 .env
 AdminWeb/node_modules/
 AdminWeb/dist/
+
+# Documentation files (this submodule has its own ignore rules)
+*.md
+*.markdown
+*.mdx
+*.rst
+*.adoc
+*.asciidoc
+*.pdf
+*.doc
+*.docx
+*.docm
+*.dot
+*.dotx
+*.dotm
+*.odt
+*.rtf
+*.ppt
+*.pptx
+*.pptm
+*.pps
+*.ppsx
+*.odp
+*.xls
+*.xlsx
+*.xlsm
+*.xlsb
+*.ods
+*.pages
+*.key
+*.numbers
+*.epub
+*.chm
+*.tex
+*.bib
+
+# Plain-text documentation (keep application data and configuration trackable)
+[Rr][Ee][Aa][Dd][Mm][Ee]*.txt
+[Rr][Ee][Aa][Dd] [Mm][Ee]*.txt
+*[Ll][Ii][Cc][Ee][Nn][Ss][Ee]*.txt
+*[Nn][Oo][Tt][Ii][Cc][Ee]*.txt
+*[Cc][Hh][Aa][Nn][Gg][Ee][Ll][Oo][Gg]*.txt
+*[Dd][Oo][Cc][Uu][Mm][Ee][Nn][Tt][Aa][Tt][Ii][Oo][Nn]*.txt
+[Hh][Oo][Ww][Tt][Oo][Bb][Uu][Ii][Ll][Dd].txt
+* - [Oo][Ff][Ll].txt
+
+# Documentation directories
+.doc/
+[Dd]oc/
+[Dd]ocs/
+[Dd]ocumentation/
+[Dd]ocumentation~/
