@@ -10,7 +10,7 @@ $expectedCommit = (Get-Content -LiteralPath $lockPath -Raw).Trim()
 if ($expectedCommit -notmatch '^[0-9a-f]{40}$') {
     throw 'shared-source.lock 必须记录已推送到主仓库的完整 40 位提交 SHA。'
 }
-$sharedPaths = @('Assets/Shared/Configuration', 'Assets/Scripts/Network/Activities',
+$sharedPaths = @('Assets/Shared/Configuration', 'Assets/GameConfiguration', 'Assets/ActivityConfiguration', 'Assets/Scripts/Network/Activities',
     'Assets/Scripts/Network/GameConfig', 'Assets/Scripts/Localization/Generated', 'Assets/Scripts/Duel/Shared', 'TableData', 'Tools/Duel')
 & git -C $ParentWorkspace cat-file -e ($expectedCommit + '^{commit}')
 if ($LASTEXITCODE -ne 0) { throw "父仓库不存在锁定源码提交 $expectedCommit。" }

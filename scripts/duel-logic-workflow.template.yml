@@ -26,6 +26,8 @@ jobs:
           submodules: false
           sparse-checkout: |
             Assets/Shared/Configuration
+            Assets/GameConfiguration
+            Assets/ActivityConfiguration
             Assets/Scripts/Network/Activities
             Assets/Scripts/Network/GameConfig
             Assets/Scripts/Localization/Generated
