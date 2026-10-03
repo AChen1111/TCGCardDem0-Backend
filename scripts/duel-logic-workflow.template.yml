@@ -1,0 +1,44 @@
+name: 决斗逻辑与共享源码
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  logic:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: lock-source
+      - name: 读取固定父仓库提交
+        shell: pwsh
+        run: |
+          $sharedCommit = (Get-Content -LiteralPath 'lock-source/shared-source.lock' -Raw).Trim()
+          if ($sharedCommit -notmatch '^[0-9a-f]{40}$') { throw '共享源码锁定文件不是完整提交 SHA。' }
+          "SHARED_COMMIT=$sharedCommit" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - uses: actions/checkout@v4
+        with:
+          repository: AChen1111/TCGGameDem0
+          ref: ${{ env.SHARED_COMMIT }}
+          path: game
+          submodules: false
+          sparse-checkout: |
+            Assets/Shared/Configuration
+            Assets/Scripts/Network/Activities
+            Assets/Scripts/Network/GameConfig
+            Assets/Scripts/Localization/Generated
+            Assets/Scripts/Duel/Shared
+            TableData
+            Tools/Duel
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: game/Backend
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: 运行固定组合逻辑入口
+        shell: pwsh
+        run: ./game/Backend/scripts/verify-shared-source.ps1 -ParentWorkspace (Resolve-Path './game').Path
