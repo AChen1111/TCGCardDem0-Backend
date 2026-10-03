@@ -9,6 +9,8 @@ using AChen.Backend.Api.Features.Players;
 using AChen.Backend.Api.Features.Decks;
 using AChen.Backend.Api.Features.Social;
 using AChen.Backend.Api.Features.Activities;
+using AChen.Backend.Api.Features.Duels;
+using AChen.Duel.Core;
 using AChen.Backend.Api.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -75,6 +77,11 @@ builder.Services.AddOptions<ContentDeliveryOptions>()
     .Validate(options => options.MaxFileCount is >= 1 and <= 100_000, "ContentDelivery:MaxFileCount must be between 1 and 100000.")
     .ValidateOnStart();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<DuelReplayStore>();
+builder.Services.AddSingleton(provider => new DuelRoomService(provider.GetRequiredService<TimeProvider>(),
+    new DuelRoomCardSupport(CardRuleCatalog.CreateDefault(DuelCardCatalog.CreateDefault())),
+    new DuelRoomStartSource(), provider.GetRequiredService<IServiceScopeFactory>(), provider.GetRequiredService<DuelReplayStore>()));
+builder.Services.AddHostedService<DuelRoomTicker>();
 builder.Services.AddSingleton<ActivityTimeProvider>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<TokenService>();
@@ -284,6 +291,7 @@ app.UseStaticFiles();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseWebSockets();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/ready", async (AppDbContext db, CancellationToken cancellationToken) =>
@@ -293,6 +301,7 @@ app.MapGet("/ready", async (AppDbContext db, CancellationToken cancellationToken
 app.MapAuthEndpoints();
 app.MapPlayerEndpoints();
 app.MapDeckEndpoints();
+app.MapDuelRoomEndpoints();
 app.MapSocialEndpoints();
 app.MapActivityEndpoints();
 app.MapAccountManagementEndpoints();

@@ -24,4 +24,7 @@
     <Compile Include="../../../Assets/Scripts/Network/Activities/*.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../../../Assets/Scripts/Localization/Generated/TranslationRow.cs" Link="Shared/TranslationRow.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AChen.Duel.Core\AChen.Duel.Core.csproj" />
+  </ItemGroup>
 </Project>
