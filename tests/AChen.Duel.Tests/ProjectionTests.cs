@@ -81,7 +81,7 @@ public sealed class ProjectionTests
     }
 
     [Fact]
-    public void SeatSeesOwnHandButReceivesOnlyCountsForOpponentHandAndBothDecks()
+    public void SeatSeesOwnHandAndUnorderedOwnDeckButOnlyOpponentCounts()
     {
         var state = new DuelState { RandomState = 987654321 };
         state.Cards.Add(Card(1, "own-hand", 0, DuelZone.Hand));
@@ -96,7 +96,8 @@ public sealed class ProjectionTests
         Assert.Equal(1, view.Players[1].DeckCount);
         var wire = JsonSerializer.Serialize(view);
         Assert.DoesNotContain("opponent-secret", wire);
-        Assert.DoesNotContain("own-deck-secret", wire);
+        Assert.Equal(new[] { "own-deck-secret" }, view.MainDeckDefinitions);
+        Assert.DoesNotContain(view.Cards, card => card.Zone == DuelZone.Deck);
         Assert.DoesNotContain("opponent-deck-secret", wire);
         Assert.DoesNotContain("RandomState", wire);
         Assert.DoesNotContain("InstanceId", wire);

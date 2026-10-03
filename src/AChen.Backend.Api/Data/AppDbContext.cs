@@ -12,6 +12,7 @@ namespace AChen.Backend.Api.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<Features.Duels.StoredDuelReplay> DuelReplays => Set<Features.Duels.StoredDuelReplay>();
     public DbSet<CurrentContent> CurrentContents => Set<CurrentContent>();
     public DbSet<User> Users => Set<User>();
     public DbSet<PlayerDeck> PlayerDecks => Set<PlayerDeck>();
@@ -24,6 +25,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         Features.Activities.ActivityModel.Configure(modelBuilder);
+        modelBuilder.Entity<Features.Duels.StoredDuelReplay>(replay =>
+        {
+            replay.HasKey(x => x.Id);
+            replay.HasIndex(x => x.Player0);
+            replay.HasIndex(x => x.Player1);
+            replay.Property(x => x.PlayersJson).IsRequired();
+            replay.Property(x => x.TracksJson).IsRequired();
+        });
         modelBuilder.Entity<PlayerDeck>(deck =>
         {
             deck.HasKey(x => x.Id);

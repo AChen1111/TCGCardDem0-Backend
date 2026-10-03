@@ -14,6 +14,14 @@ public static class DuelRoomEndpoints
                 context.HttpContext.Response.Headers.CacheControl = "no-store";
                 return await next(context);
             });
+        rooms.MapGet("", (DuelRoomService service) => Results.Ok(service.List()));
+        rooms.MapGet("/current", (HttpContext context, DuelRoomService service) => Results.Ok(service.Current(UserId(context))));
+        rooms.MapGet("/{id:guid}/preview", (Guid id, int seat, AChen.Duel.Core.DuelZone zone, HttpContext context, DuelRoomService service) =>
+            Results.Ok(service.Preview(UserId(context), id, seat, zone)));
+        var replays = endpoints.MapGroup("/api/duel/replays").RequireAuthorization().RequireRateLimiting("player");
+        replays.AddEndpointFilter(async (context, next) => { context.HttpContext.Response.Headers.CacheControl = "no-store"; return await next(context); });
+        replays.MapGet("", (HttpContext context, DuelReplayStore store) => Results.Ok(store.List(UserId(context))));
+        replays.MapGet("/{id:guid}", (Guid id, HttpContext context, DuelReplayStore store) => Results.Ok(store.Get(UserId(context), id)));
         rooms.MapPost("", (HttpContext context, DuelRoomService service) => Results.Ok(service.Create(UserId(context))));
         rooms.MapPost("/join", (JoinRoomRequest request, HttpContext context, DuelRoomService service) =>
             Results.Ok(service.Join(UserId(context), request.Code)));

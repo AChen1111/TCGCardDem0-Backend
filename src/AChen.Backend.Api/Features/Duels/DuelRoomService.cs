@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using AChen.Backend.Api.Infrastructure;
+using AChen.Backend.Api.Data;
+using Microsoft.EntityFrameworkCore;
 using AChen.Duel.Core;
 
 namespace AChen.Backend.Api.Features.Duels;
@@ -8,6 +10,8 @@ namespace AChen.Backend.Api.Features.Duels;
 /// <summary>账号绑定的双人好友房间。房间码只定位房间，账号决定席位。</summary>
 public sealed class DuelRoomService
 {
+    readonly IServiceScopeFactory? scopes;
+    readonly DuelReplayStore? replayStore;
     readonly TimeProvider clock;
     readonly IDuelRoomCardSupport support;
     readonly IDuelRoomStartSource starts;
@@ -24,6 +28,60 @@ public sealed class DuelRoomService
         : this(clock, support, new DuelRoomStartSource()) { }
     public DuelRoomService(TimeProvider clock, IDuelRoomCardSupport support, IDuelRoomStartSource starts)
     { this.clock = clock; this.support = support; this.starts = starts; }
+    public DuelRoomService(TimeProvider clock, IDuelRoomCardSupport support, IDuelRoomStartSource starts,
+        IServiceScopeFactory scopes, DuelReplayStore replayStore) : this(clock, support, starts)
+    { this.scopes = scopes; this.replayStore = replayStore; }
+    DuelRoomPlayer Player(Guid userId, int seat, bool ready, bool hasDeck)
+    {
+        if (scopes == null) return new DuelRoomPlayer(userId, seat, ready, hasDeck);
+        using var scope = scopes.CreateScope();
+        var profile = scope.ServiceProvider.GetRequiredService<AppDbContext>().PlayerProfiles.AsNoTracking().Single(x => x.UserId == userId);
+        return new DuelRoomPlayer(userId, seat, ready, hasDeck) { Nickname = profile.Nickname,
+            AvatarId = profile.AvatarId!.Value, AvatarFrameId = profile.AvatarFrameId };
+    }
+    public IReadOnlyList<DuelRoomSummary> List()
+    {
+        Room[] snapshot;
+        lock (gate) snapshot = rooms.Values.ToArray();
+        var result = new List<DuelRoomSummary>();
+        foreach (var room in snapshot) lock (room.Gate)
+        {
+            if (room.Closed) continue;
+            AdvanceClock(room);
+            if (room.Closed || room.Status != "Waiting" || room.Players.Count != 1) continue;
+            var host = Player(room.Players[0], 0, false, false);
+            result.Add(new DuelRoomSummary(room.Id, room.Code, host.Nickname + "的房间", host.Nickname,
+                host.AvatarId, host.AvatarFrameId, room.Players.Count));
+        }
+        return result;
+    }
+    public DuelRoomView? Current(Guid userId)
+    {
+        Room? room;
+        lock (gate) room = memberships.GetValueOrDefault(userId);
+        if (room == null) return null;
+        lock (room.Gate) { AdvanceClock(room); return room.Closed ? null : View(room, userId); }
+    }
+    public DuelZonePreview Preview(Guid userId, Guid roomId, int seat, DuelZone zone)
+    {
+        var room = Find(roomId);
+        lock (room.Gate)
+        {
+            RequireMember(room, userId);
+            if (seat < 0 || seat > 1 || zone is not (DuelZone.Deck or DuelZone.ExtraDeck or DuelZone.Graveyard or DuelZone.Banished))
+                throw Error(400, "INVALID_PREVIEW", "预览区域无效");
+            if (room.Engine == null) throw Error(409, "DUEL_NOT_STARTED", "对局尚未开始");
+            var viewer = room.Players.IndexOf(userId);
+            var cards = room.Engine.State.Cards.Where(c => c.Owner == seat && c.Zone == zone)
+                .Select(c => new { Card = c, Known = zone == DuelZone.Deck ? viewer == seat :
+                    (c.RevealedToMask & (1 << viewer)) != 0 || c.Controller == viewer ||
+                    c.Position is not (CardPosition.FaceDown or CardPosition.FaceDownDefense) })
+                .OrderBy(c => c.Known ? c.Card.DefinitionId : "", StringComparer.Ordinal)
+                .Select(c => new DuelPreviewCard(zone == DuelZone.Deck || !c.Known ? "" : room.Projections[viewer].PreviewHandle(c.Card),
+                    c.Known ? c.Card.DefinitionId : "", c.Known, 1, c.Card.Position)).ToArray();
+            return new DuelZonePreview(room.Sequence, seat, zone, cards);
+        }
+    }
 
     public DuelRoomView Create(Guid userId)
     {
@@ -165,7 +223,7 @@ public sealed class DuelRoomService
             if (room.Departed.Contains(userId)) throw Error(403, "ROOM_FORBIDDEN", "账号已离开此房间");
             foreach (var departed in room.Departed) { room.Players.Remove(departed); room.Decks.Remove(departed); }
             room.Departed.Clear();
-            room.Engine = null; room.Replay = null; room.Ready.Clear(); room.Receipts.Clear(); room.DisconnectedAt.Clear();
+            room.ReplaySaved = false; room.Engine = null; room.Replay = null; room.Ready.Clear(); room.Receipts.Clear(); room.DisconnectedAt.Clear();
             room.Projections[0] = new SeatProjection(0); room.Projections[1] = new SeatProjection(1);
             room.Status = "Waiting";
             room.FinishedAt = null;
@@ -188,6 +246,16 @@ public sealed class DuelRoomService
         room.Engine = new DuelEngine(catalog, start);
         room.Replay = new DuelReplayRecorder(start, room.Engine.State);
         room.Status = "Running";
+        room.StartedAt = clock.GetUtcNow(); room.ReplayId = Guid.NewGuid();
+        for (var seat = 0; seat < 2; seat++) { room.Recorded[seat].Clear(); room.Initial[seat] = View(room, room.Players[seat]); }
+        room.Engine.EventEmitted += fact => {
+            for (var seat = 0; seat < 2; seat++)
+                {
+                    var snapshot = room.Projections[seat].ProjectPresentation(room.Engine.State);
+                    var projected = room.Projections[seat].ProjectEvents(new[] { fact })[0];
+                    room.StageFrames[seat].Add((fact, projected, snapshot));
+                }
+        };
         room.ClockAt = clock.GetUtcNow();
     }
 
@@ -276,8 +344,23 @@ public sealed class DuelRoomService
         }
     }
 
-    static DuelRoomNotice Notice(Room room, Guid userId, IEnumerable<DuelEvent> events, DuelCommandReceipt? receipt) =>
-        new(View(room, userId), receipt) { Events = room.Projections[room.Players.IndexOf(userId)].ProjectEvents(events) };
+    DuelRoomNotice Notice(Room room, Guid userId, IEnumerable<DuelEvent> events, DuelCommandReceipt? receipt)
+    {
+        var seat = room.Players.IndexOf(userId);
+        var ids = events.Select(x => x.Id).ToHashSet();
+        var stages = room.StageFrames[seat].Where(x => ids.Contains(x.Fact.Id)).ToArray();
+        foreach (var stage in stages)
+        {
+            stage.Event.LinkNumber = stage.Fact.LinkNumber;
+            stage.Event.ActivationKind = stage.Fact.ActivationKind;
+            stage.Event.ActivationNegated = stage.Fact.ActivationNegated;
+            stage.Event.IsCardActivation = stage.Fact.IsCardActivation;
+            stage.Event.ImpactLifePoints = stage.Snapshot.Players.Select(p => p.LifePoints).ToArray();
+        }
+        var projected = stages.Select(x => x.Event).ToArray();
+        return new DuelRoomNotice(View(room, userId), receipt) { Events = projected,
+            Frames = stages.Select(x => new DuelPresentationFrame(x.Event, x.Snapshot)).ToArray() };
+    }
 
     public DuelNamePage QueryNames(Guid userId, Guid roomId, string actionToken, string query, int offset)
     {
@@ -303,10 +386,17 @@ public sealed class DuelRoomService
         }
     }
 
-    static DuelStepResult ApplyAndRecord(Room room, DuelCommand command)
+    DuelStepResult ApplyAndRecord(Room room, DuelCommand command)
     {
+        foreach (var frames in room.StageFrames) frames.Clear();
         var result = room.Engine!.Apply(command);
         room.Replay!.Append(command, result, DuelStateDigest.Compute(room.Engine.State));
+        if (result.Accepted) for (var seat = 0; seat < 2; seat++)
+            {
+                var notice = Notice(room, room.Players[seat], result.Events, null);
+                room.Recorded[seat].Add(notice with { Room = notice.Room with { Sequence = room.Sequence + 1,
+                    Status = room.Engine.State.Finished ? "Finished" : "Running" } });
+            }
         return result;
     }
 
@@ -331,9 +421,21 @@ public sealed class DuelRoomService
 
     void Complete(Room room)
     {
+        if (room.Status == "Finished" && room.ReplaySaved) return;
         room.Status = "Finished";
-        room.FinishedAt = clock.GetUtcNow();
-        room.ReplayHistory.Add(room.Replay!.Capture());
+        room.FinishedAt ??= clock.GetUtcNow();
+        if (!room.ReplaySaved)
+        {
+            var players = room.Players.Select((id, seat) => Player(id, seat, false, true)).ToArray();
+            replayStore?.Save(new StoredDuelReplay { Id = room.ReplayId, Player0 = room.Players[0], Player1 = room.Players[1],
+                StartedAtTicks = room.StartedAt.UtcTicks, FinishedAtTicks = room.FinishedAt.Value.UtcTicks,
+                Winner = room.Engine!.State.Winner, TurnCount = room.Engine.State.Turn,
+                PlayersJson = JsonSerializer.Serialize(players, DuelReplayStore.Json),
+                TracksJson = JsonSerializer.Serialize(Enumerable.Range(0, 2).Select(seat =>
+                    new DuelReplayTrack(seat, room.Initial[seat], room.Recorded[seat])).ToArray(), DuelReplayStore.Json) });
+            room.ReplayHistory.Add(room.Replay!.Capture());
+            room.ReplaySaved = true;
+        }
     }
 
     public void Tick()
@@ -348,6 +450,7 @@ public sealed class DuelRoomService
         var now = clock.GetUtcNow();
         if (room.Status == "Waiting" && now - room.LastActivityAt >= TimeSpan.FromMinutes(30))
         { CloseRoom(room); return; }
+        if (room.Status == "Finished" && !room.ReplaySaved) Complete(room);
         if (room.Status == "Finished" && now - room.FinishedAt >= TimeSpan.FromMinutes(10))
         { CloseRoom(room); return; }
         if (room.Status != "Running") return;
@@ -478,9 +581,9 @@ public sealed class DuelRoomService
         }
     }
 
-    static DuelRoomView View(Room room, Guid userId) => new(room.Id, room.Code, room.Status,
+    DuelRoomView View(Room room, Guid userId) => new(room.Id, room.Code, room.Status,
         room.Players.IndexOf(userId), room.Sequence,
-        room.Players.Select((id, seat) => new DuelRoomPlayer(id, seat, room.Ready.Contains(id), room.Decks.ContainsKey(id))).ToArray(),
+        room.Players.Select((id, seat) => Player(id, seat, room.Ready.Contains(id), room.Decks.ContainsKey(id))).ToArray(),
         room.Decks.TryGetValue(userId, out var deck) ? CopyDeck(deck) : null,
         room.Engine == null ? null : room.Projections[room.Players.IndexOf(userId)].Project(room.Engine.State,
             room.Engine.QueryLegalActions(room.Players.IndexOf(userId))), Array.AsReadOnly((double[])room.RemainingSeconds.Clone()),
@@ -526,6 +629,12 @@ public sealed class DuelRoomService
 
     sealed class Room
     {
+        public DateTimeOffset StartedAt { get; set; }
+        public Guid ReplayId { get; set; }
+        public bool ReplaySaved { get; set; }
+        public DuelRoomView[] Initial { get; } = new DuelRoomView[2];
+        public List<DuelRoomNotice>[] Recorded { get; } = { new(), new() };
+        public List<(DuelEvent Fact, ProjectedDuelEvent Event, DuelSeatSnapshot Snapshot)>[] StageFrames { get; } = { new(), new() };
         public object Gate { get; } = new();
         public bool Closed { get; set; }
         public DuelRulePackage RulePackage { get; } = DuelRulePackage.CreateDefault(DuelCardCatalog.CreateDefault());
